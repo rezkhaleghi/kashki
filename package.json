@@ -1,7 +1,7 @@
 {
-  "name": "nest-clean-arch-skeleton",
+  "name": "kashki-backend",
   "version": "1.0.0",
-  "description": "Reusable NestJS skeleton using 4-layer Clean Architecture (domain, application, infrastructure, api)",
+  "description": "kashki-backend",
   "scripts": {
     "build": "nest build",
     "start": "nest start",

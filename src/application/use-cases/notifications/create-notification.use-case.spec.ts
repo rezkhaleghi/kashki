@@ -1,4 +1,4 @@
-import { SendNotificationUseCase } from "./send-notification.use-case";
+import { CreateNotificationUseCase } from "./create-notification.use-case";
 
 import { Notification } from "@domain/entities/notification.entity";
 import { NotificationChannel } from "@domain/enums/notification-channel.enum";
@@ -7,7 +7,7 @@ import { NotificationType } from "@domain/enums/notification-type.enum";
 import { NotificationRepository } from "@domain/repositories/notification.repository";
 import { NotificationService } from "@application/interfaces/notification.service.interface";
 
-describe("SendNotificationUseCase", () => {
+describe("CreateNotificationUseCase", () => {
   const notificationRepositoryMock = {
     create: jest.fn(),
     save: jest.fn(),
@@ -23,7 +23,7 @@ describe("SendNotificationUseCase", () => {
   const notificationService =
     notificationServiceMock as unknown as NotificationService;
 
-  let useCase: SendNotificationUseCase;
+  let useCase: CreateNotificationUseCase;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -38,7 +38,7 @@ describe("SendNotificationUseCase", () => {
 
     notificationServiceMock.sendEmail.mockResolvedValue(undefined);
 
-    useCase = new SendNotificationUseCase(
+    useCase = new CreateNotificationUseCase(
       notificationRepository,
       notificationService,
     );

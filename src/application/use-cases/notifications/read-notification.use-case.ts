@@ -4,7 +4,7 @@ import { NotificationNotFoundException } from "@domain/exceptions/domain.excepti
 import { NotificationRepository } from "@domain/repositories/notification.repository";
 
 @Injectable()
-export class MarkNotificationReadUseCase {
+export class ReadNotificationUseCase {
   constructor(
     private readonly notificationRepository: NotificationRepository,
   ) {}

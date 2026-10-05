@@ -1,10 +1,10 @@
-import { ListUserNotificationsUseCase } from "./list-user-notifications.use-case";
+import { ListNotificationsUseCase } from "./list-notifications.use-case";
 
 import { NotificationChannel } from "@domain/enums/notification-channel.enum";
 import { NotificationType } from "@domain/enums/notification-type.enum";
 import { NotificationRepository } from "@domain/repositories/notification.repository";
 
-describe("ListUserNotificationsUseCase", () => {
+describe("ListNotificationsUseCase", () => {
   const notificationRepositoryMock = {
     findByUserId: jest.fn(),
   };
@@ -12,7 +12,7 @@ describe("ListUserNotificationsUseCase", () => {
   const notificationRepository =
     notificationRepositoryMock as unknown as NotificationRepository;
 
-  let useCase: ListUserNotificationsUseCase;
+  let useCase: ListNotificationsUseCase;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -25,7 +25,7 @@ describe("ListUserNotificationsUseCase", () => {
       totalPages: 0,
     });
 
-    useCase = new ListUserNotificationsUseCase(notificationRepository);
+    useCase = new ListNotificationsUseCase(notificationRepository);
   });
 
   it("lists notifications belonging to the current user", async () => {

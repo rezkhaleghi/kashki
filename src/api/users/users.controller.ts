@@ -39,8 +39,8 @@ import { UpdateUserAvatarUseCase } from "@application/use-cases/users/update-use
 import { DeleteUserAvatarUseCase } from "@application/use-cases/users/delete-user-avatar.use-case";
 import { SearchUsersUseCase } from "@application/use-cases/users/search-users.use-case";
 import { GetUserBalancesUseCase } from "@application/use-cases/users/get-user-balances.use-case";
-import { ListUserNotificationsUseCase } from "@application/use-cases/notifications/list-user-notifications.use-case";
-import { MarkNotificationReadUseCase } from "@application/use-cases/notifications/mark-notification-read.use-case";
+import { ListUserNotificationsUseCase } from "@application/use-cases/notifications/list-notifications.use-case";
+import { MarkNotificationReadUseCase } from "@application/use-cases/notifications/read-notification.use-case";
 
 import { UpdateProfileDto } from "../auth/dtos/update-profile.dto";
 import { AuthenticatedUserResponseDto } from "../auth/dtos/authenticated-user.response.dto";

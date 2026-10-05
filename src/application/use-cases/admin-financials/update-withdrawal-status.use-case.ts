@@ -16,7 +16,7 @@ import {
 } from "@domain/exceptions/domain.exception";
 
 import { UnitOfWork } from "@application/interfaces/unit-of-work.interface";
-import { SendNotificationUseCase } from "@application/use-cases/notifications/send-notification.use-case";
+import { SendNotificationUseCase } from "@application/use-cases/notifications/create-notification.use-case";
 
 export interface AdminUpdateWithdrawalStatusInput {
   withdrawalId: string;

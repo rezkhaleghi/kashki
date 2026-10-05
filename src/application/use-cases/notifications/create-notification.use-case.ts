@@ -7,7 +7,7 @@ import { NotificationType } from "@domain/enums/notification-type.enum";
 import { NotificationRepository } from "@domain/repositories/notification.repository";
 import { NotificationService } from "@application/interfaces/notification.service.interface";
 
-export interface SendNotificationInput {
+export interface CreateNotificationInput {
   userId: string;
   email?: string;
   type: NotificationType;
@@ -18,13 +18,13 @@ export interface SendNotificationInput {
 }
 
 @Injectable()
-export class SendNotificationUseCase {
+export class CreateNotificationUseCase {
   constructor(
     private readonly notificationRepository: NotificationRepository,
     private readonly notificationService: NotificationService,
   ) {}
 
-  async execute(input: SendNotificationInput): Promise<Notification> {
+  async execute(input: CreateNotificationInput): Promise<Notification> {
     const notification = Notification.create({
       userId: input.userId,
       type: input.type,

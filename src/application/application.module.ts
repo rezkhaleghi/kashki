@@ -54,12 +54,18 @@ import { CreateTicketCategoryUseCase } from "./use-cases/admin-tickets/create-ti
 import { UpdateTicketCategoryUseCase } from "./use-cases/admin-tickets/update-ticket-category.use-case";
 import { DeactivateTicketCategoryUseCase } from "./use-cases/admin-tickets/deactive-ticket-category.use-case";
 
-import { SendNotificationUseCase } from "./use-cases/notifications/send-notification.use-case";
-import { ListUserNotificationsUseCase } from "./use-cases/notifications/list-user-notifications.use-case";
-import { MarkNotificationReadUseCase } from "./use-cases/notifications/mark-notification-read.use-case";
+import { CreateNotificationUseCase } from "./use-cases/notifications/create-notification.use-case";
+import { ListNotificationsUseCase } from "./use-cases/notifications/list-notifications.use-case";
+import { ReadNotificationUseCase } from "./use-cases/notifications/read-notification.use-case";
 
 import { AdminListNotificationsUseCase } from "./use-cases/admin-notifications/list-notifications.use-case";
 import { AdminGetNotificationUseCase } from "./use-cases/admin-notifications/get-notification.use-case";
+
+import { CreateListUseCase } from "./use-cases/lists/create-list.use-case";
+import { ListListsUseCase } from "./use-cases/lists/list-lists.use-case";
+import { UpdateListUseCase } from "./use-cases/lists/update-list.use-case";
+import { DeleteListUseCase } from "./use-cases/lists/delete-list.use-case";
+
 /**
  * Registers application use cases. Infrastructure bindings are supplied by
  * the composition root and injected through application interfaces.
@@ -102,9 +108,15 @@ import { AdminGetNotificationUseCase } from "./use-cases/admin-notifications/get
     CreateTicketMessageUseCase,
 
     // Notifications
-    SendNotificationUseCase,
-    ListUserNotificationsUseCase,
-    MarkNotificationReadUseCase,
+    CreateNotificationUseCase,
+    ListNotificationsUseCase,
+    ReadNotificationUseCase,
+
+    // Lists
+    CreateListUseCase,
+    ListListsUseCase,
+    UpdateListUseCase,
+    DeleteListUseCase,
 
     // Admin Notifications
     AdminListNotificationsUseCase,
@@ -196,9 +208,15 @@ import { AdminGetNotificationUseCase } from "./use-cases/admin-notifications/get
     CreateTicketMessageUseCase,
 
     // Notifications
-    SendNotificationUseCase,
-    MarkNotificationReadUseCase,
-    ListUserNotificationsUseCase,
+    CreateNotificationUseCase,
+    ReadNotificationUseCase,
+    ListNotificationsUseCase,
+
+    // Lists
+    CreateListUseCase,
+    ListListsUseCase,
+    UpdateListUseCase,
+    DeleteListUseCase,
 
     // Admin Notifications
     AdminListNotificationsUseCase,

@@ -1,4 +1,4 @@
-import { MarkNotificationReadUseCase } from "./mark-notification-read.use-case";
+import { ReadNotificationUseCase } from "./read-notification.use-case";
 
 import { Notification } from "@domain/entities/notification.entity";
 import { NotificationChannel } from "@domain/enums/notification-channel.enum";
@@ -6,7 +6,7 @@ import { NotificationType } from "@domain/enums/notification-type.enum";
 import { NotificationRepository } from "@domain/repositories/notification.repository";
 import { NotificationNotFoundException } from "@domain/exceptions/domain.exception";
 
-describe("MarkNotificationReadUseCase", () => {
+describe("ReadNotificationUseCase", () => {
   const notificationRepositoryMock = {
     findByUserIdAndId: jest.fn(),
     save: jest.fn(),
@@ -15,7 +15,7 @@ describe("MarkNotificationReadUseCase", () => {
   const notificationRepository =
     notificationRepositoryMock as unknown as NotificationRepository;
 
-  let useCase: MarkNotificationReadUseCase;
+  let useCase: ReadNotificationUseCase;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -24,7 +24,7 @@ describe("MarkNotificationReadUseCase", () => {
       async (notification: Notification) => notification,
     );
 
-    useCase = new MarkNotificationReadUseCase(notificationRepository);
+    useCase = new ReadNotificationUseCase(notificationRepository);
   });
 
   it("marks an in-app notification as read", async () => {

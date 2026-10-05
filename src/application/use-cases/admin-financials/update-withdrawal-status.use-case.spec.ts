@@ -15,7 +15,7 @@ import {
   UserBalanceNotFoundException,
   WithdrawalNotFoundException,
 } from "@domain/exceptions/domain.exception";
-import { SendNotificationUseCase } from "../notifications/send-notification.use-case";
+import { SendNotificationUseCase } from "../notifications/create-notification.use-case";
 
 describe("AdminUpdateWithdrawalStatusUseCase", () => {
   const userRepository = {

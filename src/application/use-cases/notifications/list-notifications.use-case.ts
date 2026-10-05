@@ -6,7 +6,7 @@ import { NotificationRepository } from "@domain/repositories/notification.reposi
 
 import { PageQuery } from "@shared/pagination/page-query";
 
-export interface ListUserNotificationsInput {
+export interface ListNotificationsInput {
   userId: string;
   page: number;
   limit: number;
@@ -16,12 +16,12 @@ export interface ListUserNotificationsInput {
 }
 
 @Injectable()
-export class ListUserNotificationsUseCase {
+export class ListNotificationsUseCase {
   constructor(
     private readonly notificationRepository: NotificationRepository,
   ) {}
 
-  async execute(input: ListUserNotificationsInput) {
+  async execute(input: ListNotificationsInput) {
     const pageQuery: PageQuery<"createdAt"> = {
       page: input.page,
       limit: input.limit,

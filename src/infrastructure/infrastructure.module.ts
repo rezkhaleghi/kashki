@@ -85,6 +85,9 @@ import { EnvironmentConfig } from "./config/environment.config";
 import { NotificationOrmEntity } from "./database/orm-entities/notification.orm-entity";
 import { NotificationRepositoryImpl } from "./database/repositories/notification.repository.impl";
 import { NotificationRepository } from "@domain/repositories/notification.repository";
+import { ListOrmEntity } from "./database/orm-entities/list.orm-entity";
+import { ListRepository } from "@domain/repositories/list.repository";
+import { ListRepositoryImpl } from "./database/repositories/list.repository.impl";
 /**
  * Infrastructure composition root.
  *
@@ -259,6 +262,7 @@ import { NotificationRepository } from "@domain/repositories/notification.reposi
       TicketMessageOrmEntity,
       TicketCategoryOrmEntity,
       NotificationOrmEntity,
+      ListOrmEntity,
     ]),
   ],
 
@@ -422,6 +426,10 @@ import { NotificationRepository } from "@domain/repositories/notification.reposi
       provide: NotificationRepository,
       useClass: NotificationRepositoryImpl,
     },
+    {
+      provide: ListRepository,
+      useClass: ListRepositoryImpl,
+    },
   ],
 
   exports: [
@@ -446,6 +454,7 @@ import { NotificationRepository } from "@domain/repositories/notification.reposi
     PAYMENT_PROVIDER_RESOLVER,
     SessionManager,
     NotificationRepository,
+    ListRepository,
   ],
 })
 export class InfrastructureModule {}

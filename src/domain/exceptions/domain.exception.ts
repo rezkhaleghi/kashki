@@ -242,3 +242,17 @@ export class NotificationNotFoundException extends DomainException {
     super("Notification not found.");
   }
 }
+// List
+//list
+
+export class ListNotFoundException extends DomainException {
+  constructor() {
+    super("List not found.");
+  }
+}
+
+export class ListAccessNotAllowedException extends DomainException {
+  constructor() {
+    super("You cannot access this list.");
+  }
+}

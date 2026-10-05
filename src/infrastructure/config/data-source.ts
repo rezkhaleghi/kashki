@@ -1,0 +1,58 @@
+import "dotenv/config";
+
+import { DataSource } from "typeorm";
+
+import { UserOrmEntity } from "../database/orm-entities/user.orm-entity";
+import { AuditLogOrmEntity } from "../database/orm-entities/audit-log.orm-entity";
+import { UserBalanceOrmEntity } from "../database/orm-entities/user-balance.orm-entity";
+import { LedgerOrmEntity } from "../database/orm-entities/ledger.orm-entity";
+import { DepositOrmEntity } from "../database/orm-entities/deposit.orm-entity";
+import { WithdrawalOrmEntity } from "../database/orm-entities/withdrawal.orm-entity";
+import { TicketOrmEntity } from "../database/orm-entities/ticket.orm-entity";
+import { TicketMessageOrmEntity } from "../database/orm-entities/ticket-message.orm-entity";
+import { TicketCategoryOrmEntity } from "../database/orm-entities/ticket-category.orm-entity";
+import { NotificationOrmEntity } from "@infrastructure/database/orm-entities/notification.orm-entity";
+
+/**
+ * TypeORM CLI data source configuration.
+ *
+ * This file is used by the TypeORM CLI for database operations
+ * such as generating, running, and reverting migrations.
+ *
+ * It is separate from NestJS configuration because the TypeORM CLI
+ * runs independently of the NestJS application and dependency injection.
+ */
+export default new DataSource({
+  type: "postgres",
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT ?? 5432),
+  username: process.env.DB_USERNAME,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  entities: [
+    UserOrmEntity,
+    AuditLogOrmEntity,
+    UserBalanceOrmEntity,
+    LedgerOrmEntity,
+    DepositOrmEntity,
+    WithdrawalOrmEntity,
+    TicketOrmEntity,
+    TicketMessageOrmEntity,
+    TicketCategoryOrmEntity,
+    NotificationOrmEntity,
+  ],
+  migrations: [__dirname + "/../database/migrations/*.{js,ts}"],
+  synchronize: true, // Set to false in production to avoid data loss
+});
+
+//                     Database
+//                        │
+//           ┌────────────┴────────────┐
+//           │                         │
+//       NestJS app                TypeORM CLI
+//           │                         │
+//           ▼                         ▼
+// typeorm-config.ts             data-source.ts
+//           │                         │
+//           ▼                         ▼
+//    TypeOrmModule              DataSource

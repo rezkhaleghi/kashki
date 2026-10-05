@@ -1,0 +1,54 @@
+import { Injectable } from "@nestjs/common";
+
+import { UserRepository } from "@domain/repositories/user.repository";
+import { InvalidCredentialsException } from "@domain/exceptions/domain.exception";
+import { PasswordHasher } from "@application/interfaces/password-hasher.interface";
+import { LoginUserInput } from "@application/dtos/login-user.input";
+import { User } from "@domain/entities/user.entity";
+import { LoginProtection } from "@application/interfaces/login-protection.interface";
+import { normalizeEmail } from "@domain/utils/normalize-email";
+import { UserStatus } from "@domain/enums/user-status.enum";
+
+@Injectable()
+export class LoginWithPasswordUseCase {
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly passwordHasher: PasswordHasher,
+    private readonly loginProtection: LoginProtection,
+  ) {}
+
+  async execute(input: LoginUserInput): Promise<User> {
+    const email = normalizeEmail(input.email);
+
+    /**
+     * Login protection is scoped to the account + client IP.
+     *
+     * This prevents an attacker from locking an account for every legitimate
+     * client simply by repeatedly submitting bad credentials for its email.
+     */
+    if (await this.loginProtection.isLocked(email, input.clientIp)) {
+      throw new InvalidCredentialsException();
+    }
+
+    const user = await this.userRepository.findByEmail(email);
+
+    if (!user?.hashedPassword || user.status !== UserStatus.ACTIVE) {
+      await this.loginProtection.recordFailure(email, input.clientIp);
+      throw new InvalidCredentialsException();
+    }
+
+    const passwordMatches = await this.passwordHasher.compare(
+      input.password,
+      user.hashedPassword,
+    );
+
+    if (!passwordMatches) {
+      await this.loginProtection.recordFailure(email, input.clientIp);
+      throw new InvalidCredentialsException();
+    }
+
+    await this.loginProtection.clear(email, input.clientIp);
+
+    return user;
+  }
+}

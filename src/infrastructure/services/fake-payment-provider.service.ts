@@ -1,0 +1,37 @@
+import { Injectable } from "@nestjs/common";
+import { randomUUID } from "crypto";
+
+import {
+  CreatePaymentInput,
+  CreatePaymentResult,
+  PaymentProviderInterface,
+  VerifyPaymentInput,
+  VerifyPaymentResult,
+} from "@application/interfaces/payment-provider.interface";
+import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
+import { PaymentProvider } from "@domain/enums/payment-provider.enum";
+
+@Injectable()
+export class FakePaymentProvider implements PaymentProviderInterface {
+  readonly name = PaymentProvider.FAKE_PROVIDER;
+  readonly supportedCurrencies = [PaymentCurrency.USD, PaymentCurrency.IRR];
+
+  async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
+    const providerPaymentId = `fake-payment-${randomUUID()}`;
+
+    return {
+      provider: this.name,
+      providerPaymentId,
+      paymentUrl: `https://fake-payment.example/pay/${providerPaymentId}?reference=${input.referenceId}`,
+    };
+  }
+
+  async verifyPayment(input: VerifyPaymentInput): Promise<VerifyPaymentResult> {
+    return {
+      providerPaymentId: input.providerPaymentId,
+      transactionId: `fake-tx-${randomUUID()}`,
+      amount: input.amount,
+      currency: input.currency,
+    };
+  }
+}

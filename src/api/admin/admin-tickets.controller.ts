@@ -1,0 +1,236 @@
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
+import {
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from "@nestjs/swagger";
+import type { Request } from "express";
+
+import { AdminAuthGuard } from "./admin-auth.guard";
+
+import { ListAdminTicketsUseCase } from "@application/use-cases/admin-tickets/list-admin-tickets.use-case";
+import { GetAdminTicketUseCase } from "@application/use-cases/admin-tickets/get-admin-ticket.use-case";
+import { CreateAdminTicketMessageUseCase } from "@application/use-cases/admin-tickets/create-admin-ticket-message.use-case";
+import { AssignTicketUseCase } from "@application/use-cases/admin-tickets/assign-ticket.use-case";
+import { UpdateTicketStatusUseCase } from "@application/use-cases/admin-tickets/update-ticket-status.use-case";
+import { UpdateTicketPriorityUseCase } from "@application/use-cases/admin-tickets/update-ticket-priority.use-case";
+import { ListTicketCategoriesUseCase } from "@application/use-cases/admin-tickets/list-ticket-categories.use-case";
+import { CreateTicketCategoryUseCase } from "@application/use-cases/admin-tickets/create-ticket-category.use-case";
+import { UpdateTicketCategoryUseCase } from "@application/use-cases/admin-tickets/update-ticket-category.use-case";
+import { DeactivateTicketCategoryUseCase } from "@application/use-cases/admin-tickets/deactive-ticket-category.use-case";
+
+import { ListTicketsQueryDto } from "./dtos/tickets/list-tickets.query.dto";
+import { ListTicketCategoriesQueryDto } from "./dtos/tickets/list-ticket-categories.query.dto";
+import { CreateTicketCategoryDto } from "./dtos/tickets/create-ticket-category.dto";
+import { UpdateTicketCategoryDto } from "./dtos/tickets/update-ticket-category.dto";
+import { CreateTicketMessageDto } from "./dtos/tickets/create-ticket-message.dto";
+import { AssignTicketDto } from "./dtos/tickets/assign-ticket.dto";
+import { UpdateTicketStatusDto } from "./dtos/tickets/update-ticket-status.dto";
+import { UpdateTicketPriorityDto } from "./dtos/tickets/update-ticket-priority.dto";
+
+@ApiTags("admin-tickets")
+@Controller("admin/tickets")
+@UseGuards(AdminAuthGuard)
+export class AdminTicketsController {
+  constructor(
+    private readonly listAdminTicketsUseCase: ListAdminTicketsUseCase,
+    private readonly getAdminTicketUseCase: GetAdminTicketUseCase,
+    private readonly createAdminTicketMessageUseCase: CreateAdminTicketMessageUseCase,
+    private readonly assignTicketUseCase: AssignTicketUseCase,
+    private readonly updateTicketStatusUseCase: UpdateTicketStatusUseCase,
+    private readonly updateTicketPriorityUseCase: UpdateTicketPriorityUseCase,
+    private readonly listTicketCategoriesUseCase: ListTicketCategoriesUseCase,
+    private readonly createTicketCategoryUseCase: CreateTicketCategoryUseCase,
+    private readonly updateTicketCategoryUseCase: UpdateTicketCategoryUseCase,
+    private readonly deactivateTicketCategoryUseCase: DeactivateTicketCategoryUseCase,
+  ) {}
+
+  @Get()
+  @ApiOperation({ summary: "List tickets for admins" })
+  @ApiResponse({ status: 200, description: "Tickets list" })
+  @ApiResponse({ status: 401, description: "Authentication required" })
+  @ApiResponse({ status: 403, description: "Administrator access required" })
+  async list(@Query() query: ListTicketsQueryDto) {
+    return this.listAdminTicketsUseCase.execute({
+      page: query.page,
+      limit: query.limit,
+      sortBy: query.sortBy,
+      sortDirection: query.sortDirection,
+      status: query.status,
+      priority: query.priority,
+      categoryId: query.categoryId,
+      userId: query.userId,
+      assignedToUserId: query.assignedToUserId,
+    });
+  }
+
+  @Get("categories")
+  @ApiOperation({ summary: "List ticket categories" })
+  @ApiResponse({ status: 200, description: "Ticket categories list" })
+  @ApiResponse({ status: 401, description: "Authentication required" })
+  @ApiResponse({ status: 403, description: "Administrator access required" })
+  async listCategories(@Query() query: ListTicketCategoriesQueryDto) {
+    return this.listTicketCategoriesUseCase.execute({
+      page: query.page,
+      limit: query.limit,
+      sortBy: query.sortBy,
+      sortDirection: query.sortDirection,
+    });
+  }
+
+  @Post("categories")
+  @ApiOperation({ summary: "Create ticket category" })
+  @ApiBody({ type: CreateTicketCategoryDto })
+  @ApiResponse({ status: 201, description: "Ticket category created" })
+  @ApiResponse({ status: 409, description: "Ticket category already exists" })
+  async createCategory(
+    @Body() dto: CreateTicketCategoryDto,
+    @Req() req: Request,
+  ) {
+    return this.createTicketCategoryUseCase.execute({
+      actorUserId: req.session.userId!,
+      name: dto.name,
+      description: dto.description ?? null,
+    });
+  }
+
+  @Patch("categories/:id")
+  @ApiOperation({ summary: "Update ticket category" })
+  @ApiParam({ name: "id", description: "Ticket category UUID", format: "uuid" })
+  @ApiBody({ type: UpdateTicketCategoryDto })
+  @ApiResponse({ status: 200, description: "Ticket category updated" })
+  @ApiResponse({ status: 404, description: "Ticket category not found" })
+  async updateCategory(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: UpdateTicketCategoryDto,
+    @Req() req: Request,
+  ) {
+    return this.updateTicketCategoryUseCase.execute({
+      actorUserId: req.session.userId!,
+      id,
+      name: dto.name,
+      description: dto.description,
+      isActive: dto.isActive,
+    });
+  }
+
+  @Patch("categories/:id/deactivate")
+  @ApiOperation({ summary: "Deactivate ticket category" })
+  @ApiParam({ name: "id", description: "Ticket category UUID", format: "uuid" })
+  @ApiResponse({ status: 200, description: "Ticket category deactivated" })
+  @ApiResponse({ status: 404, description: "Ticket category not found" })
+  async deactivateCategory(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Req() req: Request,
+  ) {
+    return this.deactivateTicketCategoryUseCase.execute({
+      actorUserId: req.session.userId!,
+      id,
+    });
+  }
+
+  @Get(":id")
+  @ApiOperation({ summary: "Get admin ticket detail" })
+  @ApiParam({ name: "id", description: "Ticket UUID", format: "uuid" })
+  @ApiResponse({ status: 200, description: "Ticket detail" })
+  @ApiResponse({ status: 400, description: "Invalid ticket UUID" })
+  @ApiResponse({ status: 404, description: "Ticket not found" })
+  async get(@Param("id", ParseUUIDPipe) id: string) {
+    return this.getAdminTicketUseCase.execute(id);
+  }
+
+  @Post(":id/messages")
+  @ApiOperation({ summary: "Reply as admin" })
+  @ApiParam({ name: "id", description: "Ticket UUID", format: "uuid" })
+  @ApiBody({ type: CreateTicketMessageDto })
+  @ApiResponse({ status: 201, description: "Admin reply created" })
+  @ApiResponse({ status: 400, description: "Invalid ticket UUID or message" })
+  @ApiResponse({ status: 404, description: "Ticket not found" })
+  async createMessage(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: CreateTicketMessageDto,
+    @Req() req: Request,
+  ) {
+    return this.createAdminTicketMessageUseCase.execute({
+      actorUserId: req.session.userId!,
+      ticketId: id,
+      body: dto.body,
+    });
+  }
+
+  @Patch(":id/assign")
+  @ApiOperation({ summary: "Assign a ticket to an admin" })
+  @ApiParam({ name: "id", description: "Ticket UUID", format: "uuid" })
+  @ApiBody({ type: AssignTicketDto })
+  @ApiResponse({ status: 200, description: "Ticket assignment updated" })
+  @ApiResponse({
+    status: 404,
+    description: "Ticket or administrator not found",
+  })
+  async assign(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: AssignTicketDto,
+    @Req() req: Request,
+  ) {
+    await this.assignTicketUseCase.execute({
+      actorUserId: req.session.userId!,
+      ticketId: id,
+      assignedToUserId: dto.assignedToUserId,
+    });
+
+    return { success: true };
+  }
+
+  @Patch(":id/status")
+  @ApiOperation({ summary: "Change ticket status" })
+  @ApiParam({ name: "id", description: "Ticket UUID", format: "uuid" })
+  @ApiBody({ type: UpdateTicketStatusDto })
+  @ApiResponse({ status: 200, description: "Ticket status updated" })
+  @ApiResponse({ status: 404, description: "Ticket not found" })
+  async status(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: UpdateTicketStatusDto,
+    @Req() req: Request,
+  ) {
+    await this.updateTicketStatusUseCase.execute({
+      actorUserId: req.session.userId!,
+      ticketId: id,
+      status: dto.status,
+    });
+
+    return { success: true };
+  }
+
+  @Patch(":id/priority")
+  @ApiOperation({ summary: "Change ticket priority" })
+  @ApiParam({ name: "id", description: "Ticket UUID", format: "uuid" })
+  @ApiBody({ type: UpdateTicketPriorityDto })
+  @ApiResponse({ status: 200, description: "Ticket priority updated" })
+  @ApiResponse({ status: 404, description: "Ticket not found" })
+  async priority(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: UpdateTicketPriorityDto,
+    @Req() req: Request,
+  ) {
+    await this.updateTicketPriorityUseCase.execute({
+      actorUserId: req.session.userId!,
+      ticketId: id,
+      priority: dto.priority,
+    });
+
+    return { success: true };
+  }
+}

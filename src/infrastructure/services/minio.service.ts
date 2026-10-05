@@ -1,0 +1,85 @@
+import { Injectable, OnModuleInit } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { Client } from "minio";
+import { FileStorage } from "@application/interfaces/file-storage.interface";
+import { Readable } from "stream";
+import { EnvironmentConfig } from "@infrastructure/config/environment.config";
+
+@Injectable()
+export class MinioService extends FileStorage implements OnModuleInit {
+  private readonly client: Client;
+  private readonly bucket: string;
+
+  constructor(
+    private readonly configService: ConfigService<EnvironmentConfig>,
+  ) {
+    super();
+
+    this.client = new Client({
+      endPoint: this.configService.getOrThrow("MINIO_ENDPOINT"),
+      port: this.configService.getOrThrow("MINIO_PORT"),
+      useSSL: this.configService.get("MINIO_USE_SSL", false),
+      accessKey: this.configService.getOrThrow("MINIO_ACCESS_KEY"),
+      secretKey: this.configService.getOrThrow("MINIO_SECRET_KEY"),
+    });
+
+    this.bucket = this.configService.get("MINIO_BUCKET", "app");
+  }
+
+  async onModuleInit(): Promise<void> {
+    const exists = await this.client.bucketExists(this.bucket);
+
+    if (!exists) {
+      await this.client.makeBucket(this.bucket);
+    }
+  }
+
+  async get(objectName: string): Promise<{
+    stream: Readable;
+    contentType: string;
+    size: number;
+  }> {
+    const stat = await this.client.statObject(this.bucket, objectName);
+
+    const stream = await this.client.getObject(this.bucket, objectName);
+
+    return {
+      stream,
+      contentType: stat.metaData["content-type"] ?? "application/octet-stream",
+      size: stat.size,
+    };
+  }
+  async upload(
+    objectName: string,
+    buffer: Buffer,
+    contentType: string,
+  ): Promise<void> {
+    await this.client.putObject(
+      this.bucket,
+      objectName,
+      buffer,
+      buffer.length,
+      {
+        "Content-Type": contentType,
+      },
+    );
+  }
+
+  async delete(objectName: string): Promise<void> {
+    await this.client.removeObject(this.bucket, objectName);
+  }
+
+  getUrl(objectName: string): string {
+    const endpoint = this.configService.getOrThrow("MINIO_ENDPOINT");
+    const port = this.configService.getOrThrow("MINIO_PORT");
+    const useSSL = this.configService.get("MINIO_USE_SSL", false);
+
+    const protocol = useSSL ? "https" : "http";
+
+    return `${protocol}://${endpoint}:${port}/${this.bucket}/${objectName}`;
+  }
+
+  async healthCheck(): Promise<void> {
+    await this.client.listBuckets();
+  }
+}

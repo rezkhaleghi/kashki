@@ -1,0 +1,148 @@
+import { Injectable } from "@nestjs/common";
+
+import { Ledger } from "@domain/entities/ledger.entity";
+import { UserBalance } from "@domain/entities/user-balance.entity";
+import { AuditLog } from "@domain/entities/audit-log.entity";
+import { AuditAction } from "@domain/enums/audit-action.enum";
+import { LedgerType } from "@domain/enums/ledger-type.enum";
+import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
+import { UserNotFoundException } from "@domain/exceptions/domain.exception";
+import { isZeroDecimal } from "@domain/utils/decimal.util";
+import { UnitOfWork } from "@application/interfaces/unit-of-work.interface";
+
+export interface UpdateUserBalanceInput {
+  userId: string;
+  currency: PaymentCurrency;
+  amount: string;
+}
+
+@Injectable()
+export class UpdateUserBalanceUseCase {
+  constructor(private readonly unitOfWork: UnitOfWork) {}
+
+  async execute(input: UpdateUserBalanceInput, actorUserId: string) {
+    return this.unitOfWork.execute(
+      async ({
+        userRepository,
+        userBalanceRepository,
+        ledgerRepository,
+        auditLogRepository,
+      }) => {
+        const user = await userRepository.findById(input.userId);
+
+        if (!user) {
+          throw new UserNotFoundException();
+        }
+
+        let existingBalance =
+          await userBalanceRepository.findByUserIdAndCurrencyForUpdate(
+            input.userId,
+            input.currency,
+          );
+
+        if (!existingBalance) {
+          // Lock the user row so concurrent first-time balance
+          // creations for this user are serialized.
+          const lockedUser = await userRepository.findByIdForUpdate(
+            input.userId,
+          );
+
+          if (!lockedUser) {
+            throw new UserNotFoundException();
+          }
+
+          // Re-check after acquiring the user lock.
+          // Another transaction may have created the balance
+          // while we were waiting for the lock.
+          existingBalance =
+            await userBalanceRepository.findByUserIdAndCurrencyForUpdate(
+              input.userId,
+              input.currency,
+            );
+        }
+
+        const before = existingBalance?.amount ?? "0";
+
+        // input.amount is a signed adjustment:
+        // +100 → increase balance by 100
+        // -100 → decrease balance by 100
+        const amount = input.amount;
+
+        // No balance change means there is nothing to record.
+        if (isZeroDecimal(amount)) {
+          return existingBalance;
+        }
+
+        if (existingBalance) {
+          existingBalance.adjust(amount);
+
+          const saved = await userBalanceRepository.save(existingBalance);
+
+          await ledgerRepository.create(
+            Ledger.create({
+              userId: input.userId,
+              currency: input.currency,
+              amount,
+              balanceBefore: before,
+              balanceAfter: saved.amount,
+              type: LedgerType.ADMIN_ADJUSTMENT,
+              actorUserId,
+            }),
+          );
+
+          await auditLogRepository.create(
+            AuditLog.create({
+              actorUserId,
+              targetUserId: input.userId,
+              action: AuditAction.USER_BALANCE_UPDATED,
+              metadata: {
+                currency: input.currency,
+                from: before,
+                to: saved.amount,
+              },
+            }),
+          );
+
+          return saved;
+        }
+
+        const balance = UserBalance.create({
+          userId: input.userId,
+          currency: input.currency,
+          amount: "0",
+        });
+
+        balance.adjust(amount);
+
+        const saved = await userBalanceRepository.create(balance);
+
+        await ledgerRepository.create(
+          Ledger.create({
+            userId: input.userId,
+            currency: input.currency,
+            amount,
+            balanceBefore: before,
+            balanceAfter: saved.amount,
+            type: LedgerType.ADMIN_ADJUSTMENT,
+            actorUserId,
+          }),
+        );
+
+        await auditLogRepository.create(
+          AuditLog.create({
+            actorUserId,
+            targetUserId: input.userId,
+            action: AuditAction.USER_BALANCE_UPDATED,
+            metadata: {
+              currency: input.currency,
+              from: before,
+              to: saved.amount,
+            },
+          }),
+        );
+
+        return saved;
+      },
+    );
+  }
+}

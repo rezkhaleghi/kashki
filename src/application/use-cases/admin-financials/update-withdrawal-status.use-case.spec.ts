@@ -15,7 +15,7 @@ import {
   UserBalanceNotFoundException,
   WithdrawalNotFoundException,
 } from "@domain/exceptions/domain.exception";
-import { SendNotificationUseCase } from "../notifications/create-notification.use-case";
+import { CreateNotificationUseCase } from "../notifications/create-notification.use-case";
 
 describe("AdminUpdateWithdrawalStatusUseCase", () => {
   const userRepository = {
@@ -48,7 +48,7 @@ describe("AdminUpdateWithdrawalStatusUseCase", () => {
   };
 
   const sendNotificationUseCase =
-    sendNotificationUseCaseMock as unknown as SendNotificationUseCase;
+    sendNotificationUseCaseMock as unknown as CreateNotificationUseCase;
 
   const unitOfWork = {
     execute: jest.fn(),

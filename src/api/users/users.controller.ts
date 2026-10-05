@@ -39,9 +39,8 @@ import { UpdateUserAvatarUseCase } from "@application/use-cases/users/update-use
 import { DeleteUserAvatarUseCase } from "@application/use-cases/users/delete-user-avatar.use-case";
 import { SearchUsersUseCase } from "@application/use-cases/users/search-users.use-case";
 import { GetUserBalancesUseCase } from "@application/use-cases/users/get-user-balances.use-case";
-import { ListUserNotificationsUseCase } from "@application/use-cases/notifications/list-notifications.use-case";
-import { MarkNotificationReadUseCase } from "@application/use-cases/notifications/read-notification.use-case";
-
+import { ListNotificationsUseCase } from "@application/use-cases/notifications/list-notifications.use-case";
+import { ReadNotificationUseCase } from "@application/use-cases/notifications/read-notification.use-case";
 import { UpdateProfileDto } from "../auth/dtos/update-profile.dto";
 import { AuthenticatedUserResponseDto } from "../auth/dtos/authenticated-user.response.dto";
 
@@ -61,8 +60,8 @@ export class UsersController {
     private readonly updateUserAvatarUseCase: UpdateUserAvatarUseCase,
     private readonly deleteUserAvatarUseCase: DeleteUserAvatarUseCase,
     private readonly searchUsersUseCase: SearchUsersUseCase,
-    private readonly listUserNotificationsUseCase: ListUserNotificationsUseCase,
-    private readonly markNotificationReadUseCase: MarkNotificationReadUseCase,
+    private readonly listNotificationsUseCase: ListNotificationsUseCase,
+    private readonly readNotificationUseCase: ReadNotificationUseCase,
   ) {}
 
   @Get("me")
@@ -248,7 +247,7 @@ export class UsersController {
     @Query() query: ListNotificationsQueryDto,
     @Req() req: Request,
   ) {
-    return this.listUserNotificationsUseCase.execute({
+    return this.listNotificationsUseCase.execute({
       userId: req.session.userId!,
       page: query.page,
       limit: query.limit,
@@ -279,7 +278,7 @@ export class UsersController {
     @Param("id", ParseUUIDPipe) id: string,
     @Req() req: Request,
   ) {
-    return this.markNotificationReadUseCase.execute(req.session.userId!, id);
+    return this.readNotificationUseCase.execute(req.session.userId!, id);
   }
 
   private toUserResponse(user: User) {

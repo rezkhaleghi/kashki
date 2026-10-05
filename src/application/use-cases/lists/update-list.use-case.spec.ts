@@ -2,6 +2,7 @@ import { List } from "@domain/entities/list.entity";
 import { ListVisibility } from "@domain/enums/list-visibility.enum";
 import { ListNotFoundException } from "@domain/exceptions/domain.exception";
 import { ListRepository } from "@domain/repositories/list.repository";
+
 import { UpdateListUseCase } from "./update-list.use-case";
 
 describe("UpdateListUseCase", () => {
@@ -36,11 +37,9 @@ describe("UpdateListUseCase", () => {
     const result = await useCase.execute({
       userId: "user-1",
       listId: "list-1",
-      data: {
-        name: "New name",
-        description: "New description",
-        visibility: ListVisibility.PUBLIC,
-      },
+      name: "New name",
+      description: "New description",
+      visibility: ListVisibility.PUBLIC,
     });
 
     expect(listRepository.findByUserIdAndId).toHaveBeenCalledWith(
@@ -62,9 +61,7 @@ describe("UpdateListUseCase", () => {
       useCase.execute({
         userId: "user-1",
         listId: "list-1",
-        data: {
-          name: "New name",
-        },
+        name: "New name",
       }),
     ).rejects.toThrow(ListNotFoundException);
 
@@ -83,9 +80,7 @@ describe("UpdateListUseCase", () => {
       useCase.execute({
         userId: "user-1",
         listId: "missing-list",
-        data: {
-          name: "New name",
-        },
+        name: "New name",
       }),
     ).rejects.toThrow(ListNotFoundException);
   });
@@ -105,9 +100,7 @@ describe("UpdateListUseCase", () => {
     await useCase.execute({
       userId: "user-1",
       listId: "list-1",
-      data: {
-        visibility: ListVisibility.UNLISTED,
-      },
+      visibility: ListVisibility.UNLISTED,
     });
 
     expect(list.name).toBe("My List");

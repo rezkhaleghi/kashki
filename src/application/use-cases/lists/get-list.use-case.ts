@@ -5,8 +5,8 @@ import {
   ListAccessNotAllowedException,
   ListNotFoundException,
 } from "@domain/exceptions/domain.exception";
-import { ListRepository } from "@domain/repositories/list.repository";
 import { ListVisibility } from "@domain/enums/list-visibility.enum";
+import { ListRepository } from "@domain/repositories/list.repository";
 
 export interface GetListInput {
   listId: string;

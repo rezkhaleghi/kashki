@@ -16,7 +16,7 @@ import {
 } from "@domain/exceptions/domain.exception";
 
 import { UnitOfWork } from "@application/interfaces/unit-of-work.interface";
-import { SendNotificationUseCase } from "@application/use-cases/notifications/create-notification.use-case";
+import { CreateNotificationUseCase } from "@application/use-cases/notifications/create-notification.use-case";
 
 export interface AdminUpdateWithdrawalStatusInput {
   withdrawalId: string;
@@ -32,7 +32,7 @@ export class AdminUpdateWithdrawalStatusUseCase {
 
   constructor(
     private readonly unitOfWork: UnitOfWork,
-    private readonly sendNotificationUseCase: SendNotificationUseCase,
+    private readonly createNotificationUseCase: CreateNotificationUseCase,
   ) {}
 
   async execute(input: AdminUpdateWithdrawalStatusInput): Promise<Withdrawal> {
@@ -209,7 +209,7 @@ export class AdminUpdateWithdrawalStatusUseCase {
       /*
        * In-app notification is persisted independently from email.
        */
-      await this.sendNotificationUseCase.execute({
+      await this.createNotificationUseCase.execute({
         ...baseInput,
         channel: NotificationChannel.IN_APP,
       });
@@ -217,7 +217,7 @@ export class AdminUpdateWithdrawalStatusUseCase {
       /*
        * Email is a separate Notification record.
        */
-      await this.sendNotificationUseCase.execute({
+      await this.createNotificationUseCase.execute({
         ...baseInput,
         email,
         channel: NotificationChannel.EMAIL,

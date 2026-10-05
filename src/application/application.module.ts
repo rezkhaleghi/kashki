@@ -65,6 +65,7 @@ import { CreateListUseCase } from "./use-cases/lists/create-list.use-case";
 import { ListListsUseCase } from "./use-cases/lists/list-lists.use-case";
 import { UpdateListUseCase } from "./use-cases/lists/update-list.use-case";
 import { DeleteListUseCase } from "./use-cases/lists/delete-list.use-case";
+import { GetListUseCase } from "./use-cases/lists/get-list.use-case";
 
 /**
  * Registers application use cases. Infrastructure bindings are supplied by
@@ -115,6 +116,7 @@ import { DeleteListUseCase } from "./use-cases/lists/delete-list.use-case";
     // Lists
     CreateListUseCase,
     ListListsUseCase,
+    GetListUseCase,
     UpdateListUseCase,
     DeleteListUseCase,
 
@@ -215,6 +217,7 @@ import { DeleteListUseCase } from "./use-cases/lists/delete-list.use-case";
     // Lists
     CreateListUseCase,
     ListListsUseCase,
+    GetListUseCase,
     UpdateListUseCase,
     DeleteListUseCase,
 

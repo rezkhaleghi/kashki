@@ -16,12 +16,13 @@ import type { Request } from "express";
 
 import { CreateListUseCase } from "@application/use-cases/lists/create-list.use-case";
 import { DeleteListUseCase } from "@application/use-cases/lists/delete-list.use-case";
+import { GetListUseCase } from "@application/use-cases/lists/get-list.use-case";
+import { ListListsUseCase } from "@application/use-cases/lists/list-lists.use-case";
 import { UpdateListUseCase } from "@application/use-cases/lists/update-list.use-case";
 
 import { AuthSessionGuard } from "../auth/auth-session.guard";
 import { CreateListDto } from "./dtos/create-list.dto";
 import { ListListsQueryDto } from "./dtos/list-lists.query.dto";
-import { ListListsUseCase } from "@application/use-cases/lists/list-lists.use-case";
 import { UpdateListDto } from "./dtos/update-list.dto";
 
 @ApiTags("lists")
@@ -30,6 +31,7 @@ export class ListsController {
   constructor(
     private readonly createListUseCase: CreateListUseCase,
     private readonly listListsUseCase: ListListsUseCase,
+    private readonly getListUseCase: GetListUseCase,
     private readonly updateListUseCase: UpdateListUseCase,
     private readonly deleteListUseCase: DeleteListUseCase,
   ) {}
@@ -64,11 +66,10 @@ export class ListsController {
   }
 
   /**
-   * This endpoint intentionally has no AuthSessionGuard.
-   *
    * PUBLIC and UNLISTED lists can be viewed anonymously.
-   * GetListUseCase is responsible for deciding whether the requested
-   * list is visible to the requester.
+   *
+   * GetListUseCase owns the visibility decision because it needs to
+   * distinguish public access from private-owner access.
    */
   @Get(":id")
   @ApiOperation({ summary: "Get a list" })
@@ -96,11 +97,9 @@ export class ListsController {
     return this.updateListUseCase.execute({
       userId: req.session.userId!,
       listId: id,
-      data: {
-        name: dto.name,
-        description: dto.description,
-        visibility: dto.visibility,
-      },
+      name: dto.name,
+      description: dto.description,
+      visibility: dto.visibility,
     });
   }
 

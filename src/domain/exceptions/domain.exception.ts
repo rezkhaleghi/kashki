@@ -242,9 +242,8 @@ export class NotificationNotFoundException extends DomainException {
     super("Notification not found.");
   }
 }
-// List
-//list
 
+// List
 export class ListNotFoundException extends DomainException {
   constructor() {
     super("List not found.");
@@ -254,5 +253,24 @@ export class ListNotFoundException extends DomainException {
 export class ListAccessNotAllowedException extends DomainException {
   constructor() {
     super("You cannot access this list.");
+  }
+}
+
+// Wish
+export class WishNotFoundException extends DomainException {
+  constructor() {
+    super("Wish not found.");
+  }
+}
+
+export class WishCompletedException extends DomainException {
+  constructor() {
+    super("This wish has already been completed.");
+  }
+}
+
+export class InvalidWishTargetAmountException extends DomainException {
+  constructor() {
+    super("Wish target amount must be positive.");
   }
 }

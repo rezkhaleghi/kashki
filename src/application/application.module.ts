@@ -66,6 +66,8 @@ import { ListListsUseCase } from "./use-cases/lists/list-lists.use-case";
 import { UpdateListUseCase } from "./use-cases/lists/update-list.use-case";
 import { DeleteListUseCase } from "./use-cases/lists/delete-list.use-case";
 import { GetListUseCase } from "./use-cases/lists/get-list.use-case";
+import { AdminListListsUseCase } from "./use-cases/admin-lists/list-lists.use-case";
+import { AdminGetListUseCase } from "./use-cases/admin-lists/get-list.use-case";
 
 /**
  * Registers application use cases. Infrastructure bindings are supplied by
@@ -119,6 +121,10 @@ import { GetListUseCase } from "./use-cases/lists/get-list.use-case";
     GetListUseCase,
     UpdateListUseCase,
     DeleteListUseCase,
+
+    // Admin Lists
+    AdminListListsUseCase,
+    AdminGetListUseCase,
 
     // Admin Notifications
     AdminListNotificationsUseCase,
@@ -220,6 +226,10 @@ import { GetListUseCase } from "./use-cases/lists/get-list.use-case";
     GetListUseCase,
     UpdateListUseCase,
     DeleteListUseCase,
+
+    // Admin Lists
+    AdminListListsUseCase,
+    AdminGetListUseCase,
 
     // Admin Notifications
     AdminListNotificationsUseCase,

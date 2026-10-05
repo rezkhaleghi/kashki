@@ -11,6 +11,7 @@ import { TicketsModule } from "./api/tickets/tickets.module";
 import { UsersModule } from "./api/users/users.module";
 import { WithdrawalsModule } from "./api/withdrawals/withdrawals.module";
 import { InfrastructureModule } from "./infrastructure/infrastructure.module";
+import { ListsModule } from "@api/lists/lists.module";
 
 /**
  * Root application module.
@@ -58,6 +59,8 @@ import { InfrastructureModule } from "./infrastructure/infrastructure.module";
 
     // Operational endpoints such as health checks.
     HealthModule,
+
+    ListsModule,
   ],
 
   /**

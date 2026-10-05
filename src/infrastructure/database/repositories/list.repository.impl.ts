@@ -76,6 +76,26 @@ export class ListRepositoryImpl implements ListRepository {
     };
   }
 
+  async findPage(
+    params: PageQuery<"createdAt" | "name">,
+  ): Promise<PageResult<List>> {
+    const [rows, total] = await this.repo.findAndCount({
+      order: {
+        [params.sortBy ?? "createdAt"]: params.sortDirection ?? "DESC",
+      },
+      skip: (params.page - 1) * params.limit,
+      take: params.limit,
+    });
+
+    return {
+      data: rows.map((row) => this.toDomain(row)),
+      page: params.page,
+      limit: params.limit,
+      total,
+      totalPages: Math.ceil(total / params.limit),
+    };
+  }
+
   async deleteById(id: string): Promise<void> {
     await this.repo.delete(id);
   }

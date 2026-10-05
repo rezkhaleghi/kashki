@@ -8,6 +8,7 @@ import { AdminDepositsController } from "./admin-deposits.controller";
 import { AdminWithdrawalsController } from "./admin-withdrawals.controller";
 import { AdminTicketsController } from "./admin-tickets.controller";
 import { AdminNotificationsController } from "./admin-notifications.controller";
+import { AdminListsController } from "./admin-lists.controller";
 
 @Module({
   imports: [ApplicationModule],
@@ -20,6 +21,7 @@ import { AdminNotificationsController } from "./admin-notifications.controller";
     AdminWithdrawalsController,
     AdminTicketsController,
     AdminNotificationsController,
+    AdminListsController,
   ],
 
   providers: [AdminAuthGuard],

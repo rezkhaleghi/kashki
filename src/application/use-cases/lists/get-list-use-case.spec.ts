@@ -20,6 +20,7 @@ describe("GetListUseCase", () => {
       findByUserIdAndId: jest.fn(),
       findPageByUserId: jest.fn(),
       deleteById: jest.fn(),
+      findPage: jest.fn(),
     };
 
     useCase = new GetListUseCase(listRepository);

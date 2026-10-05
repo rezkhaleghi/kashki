@@ -16,6 +16,7 @@ describe("DeleteListUseCase", () => {
       findByUserIdAndId: jest.fn(),
       findPageByUserId: jest.fn(),
       deleteById: jest.fn(),
+      findPage: jest.fn(),
     };
 
     useCase = new DeleteListUseCase(listRepository);

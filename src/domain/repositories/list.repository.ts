@@ -21,5 +21,12 @@ export abstract class ListRepository {
     params: PageQuery<"createdAt" | "name">,
   ): Promise<PageResult<List>>;
 
+  /**
+   * Finds all lists across all users for administrator operations.
+   */
+  abstract findPage(
+    params: PageQuery<"createdAt" | "name">,
+  ): Promise<PageResult<List>>;
+
   abstract deleteById(id: string): Promise<void>;
 }

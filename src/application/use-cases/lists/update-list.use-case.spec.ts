@@ -17,6 +17,7 @@ describe("UpdateListUseCase", () => {
       findByUserIdAndId: jest.fn(),
       findPageByUserId: jest.fn(),
       deleteById: jest.fn(),
+      findPage: jest.fn(),
     };
 
     useCase = new UpdateListUseCase(listRepository);

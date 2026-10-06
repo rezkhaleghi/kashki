@@ -1,4 +1,5 @@
 import { Gift } from "@domain/entities/gift.entity";
+import { Ledger } from "@domain/entities/ledger.entity";
 import { List } from "@domain/entities/list.entity";
 import { UserBalance } from "@domain/entities/user-balance.entity";
 import { Wish } from "@domain/entities/wish.entity";
@@ -24,6 +25,7 @@ import { CreateGiftUseCase } from "./create-gift.use-case";
 
 describe("CreateGiftUseCase", () => {
   const userId = "gifter-id";
+  const ownerId = "owner-id";
   const listId = "list-id";
   const wishId = "wish-id";
 
@@ -33,18 +35,12 @@ describe("CreateGiftUseCase", () => {
   let list: List;
   let wish: Wish;
   let balance: UserBalance;
+  let recipientBalance: UserBalance;
 
   beforeEach(() => {
-    /**
-     * These are domain entities with mutable state. They must be recreated
-     * for every test so one test cannot leak state into another test.
-     *
-     * In particular, the completion test changes the Wish status from
-     * ACTIVE to COMPLETED.
-     */
     list = List.create({
       id: listId,
-      userId: "owner-id",
+      userId: ownerId,
       name: "Birthday",
       visibility: ListVisibility.PUBLIC,
     });
@@ -62,6 +58,13 @@ describe("CreateGiftUseCase", () => {
       userId,
       currency: PaymentCurrency.USD,
       amount: "1000",
+    });
+
+    recipientBalance = UserBalance.create({
+      id: "recipient-balance-id",
+      userId: ownerId,
+      currency: PaymentCurrency.USD,
+      amount: "200",
     });
 
     repositories = {
@@ -93,27 +96,43 @@ describe("CreateGiftUseCase", () => {
 
     repositories.listRepository.findById.mockResolvedValue(list);
     repositories.wishRepository.findByIdForUpdate.mockResolvedValue(wish);
-    repositories.userBalanceRepository.findByUserIdAndCurrencyForUpdate.mockResolvedValue(
-      balance,
+
+    repositories.userBalanceRepository.findByUserIdAndCurrencyForUpdate.mockImplementation(
+      async (requestedUserId: string) => {
+        if (requestedUserId === userId) {
+          return balance;
+        }
+
+        if (requestedUserId === ownerId) {
+          return recipientBalance;
+        }
+
+        return null;
+      },
     );
+
     repositories.userBalanceRepository.save.mockImplementation(
       async (value: UserBalance) => value,
     );
+
     repositories.giftRepository.sumAmountByWishIdAndCurrency.mockResolvedValue(
       "100",
     );
+
     repositories.giftRepository.create.mockImplementation(
       async (value: Gift) => value,
     );
+
     repositories.ledgerRepository.create.mockImplementation(
-      async (value: unknown) => value,
+      async (value: Ledger) => value,
     );
+
     repositories.wishRepository.save.mockImplementation(
       async (value: Wish) => value,
     );
   });
 
-  it("creates a gift, debits the balance and records a transfer-out ledger entry", async () => {
+  it("creates a targeted gift, transfers the money to the wish owner and records matching ledger entries", async () => {
     const result = await useCase.execute({
       userId,
       wishId,
@@ -126,24 +145,58 @@ describe("CreateGiftUseCase", () => {
 
     expect(
       repositories.userBalanceRepository.findByUserIdAndCurrencyForUpdate,
-    ).toHaveBeenCalledWith(userId, PaymentCurrency.USD);
+    ).toHaveBeenNthCalledWith(1, userId, PaymentCurrency.USD);
 
-    expect(repositories.userBalanceRepository.save).toHaveBeenCalled();
+    expect(
+      repositories.userBalanceRepository.findByUserIdAndCurrencyForUpdate,
+    ).toHaveBeenNthCalledWith(2, ownerId, PaymentCurrency.USD);
 
-    expect(repositories.giftRepository.create).toHaveBeenCalled();
+    expect(balance.amount).toBe("900");
+    expect(recipientBalance.amount).toBe("300");
 
-    expect(repositories.ledgerRepository.create).toHaveBeenCalledWith(
+    expect(repositories.userBalanceRepository.save).toHaveBeenCalledTimes(2);
+
+    expect(repositories.giftRepository.create).toHaveBeenCalledWith(result);
+
+    expect(repositories.ledgerRepository.create).toHaveBeenCalledTimes(2);
+
+    const ledgerEntries: Ledger[] =
+      repositories.ledgerRepository.create.mock.calls.map(
+        ([ledger]: [Ledger]) => ledger,
+      );
+
+    const transferOut = ledgerEntries.find(
+      (ledger: Ledger) => ledger.type === LedgerType.TRANSFER_OUT,
+    );
+
+    const transferIn = ledgerEntries.find(
+      (ledger: Ledger) => ledger.type === LedgerType.TRANSFER_IN,
+    );
+
+    expect(transferOut).toEqual(
       expect.objectContaining({
+        userId,
+        amount: "-100",
+        balanceBefore: "1000",
+        balanceAfter: "900",
         type: LedgerType.TRANSFER_OUT,
+        referenceId: result.id,
+      }),
+    );
+
+    expect(transferIn).toEqual(
+      expect.objectContaining({
+        userId: ownerId,
+        amount: "100",
+        balanceBefore: "200",
+        balanceAfter: "300",
+        type: LedgerType.TRANSFER_IN,
+        referenceId: result.id,
       }),
     );
   });
 
-  it("creates a general cash gift without a wish", async () => {
-    repositories.userBalanceRepository.findByUserIdAndCurrencyForUpdate.mockResolvedValue(
-      balance,
-    );
-
+  it("creates a general cash gift without a wish and only transfers out from the giver", async () => {
     const result = await useCase.execute({
       userId,
       amount: "100",
@@ -151,9 +204,26 @@ describe("CreateGiftUseCase", () => {
     });
 
     expect(result.wishId).toBeNull();
+
     expect(
       repositories.wishRepository.findByIdForUpdate,
     ).not.toHaveBeenCalled();
+
+    expect(balance.amount).toBe("900");
+    expect(recipientBalance.amount).toBe("200");
+
+    expect(
+      repositories.userBalanceRepository.findByUserIdAndCurrencyForUpdate,
+    ).toHaveBeenCalledTimes(1);
+
+    expect(repositories.ledgerRepository.create).toHaveBeenCalledTimes(1);
+
+    expect(repositories.ledgerRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: LedgerType.TRANSFER_OUT,
+        referenceId: result.id,
+      }),
+    );
   });
 
   it("rejects a missing wish", async () => {
@@ -172,7 +242,7 @@ describe("CreateGiftUseCase", () => {
   it("rejects a private wish for a non-owner", async () => {
     const privateList = List.create({
       id: listId,
-      userId: "owner-id",
+      userId: ownerId,
       name: "Private",
       visibility: ListVisibility.PRIVATE,
     });
@@ -315,9 +385,15 @@ describe("CreateGiftUseCase", () => {
     expect(repositories.wishRepository.save).not.toHaveBeenCalled();
   });
 
-  it("does not debit or create a gift when the balance does not exist", async () => {
-    repositories.userBalanceRepository.findByUserIdAndCurrencyForUpdate.mockResolvedValue(
-      null,
+  it("does not debit or create a gift when the giver balance does not exist", async () => {
+    repositories.userBalanceRepository.findByUserIdAndCurrencyForUpdate.mockImplementation(
+      async (requestedUserId: string) => {
+        if (requestedUserId === ownerId) {
+          return recipientBalance;
+        }
+
+        return null;
+      },
     );
 
     await expect(
@@ -329,6 +405,31 @@ describe("CreateGiftUseCase", () => {
       }),
     ).rejects.toThrow(UserBalanceNotFoundException);
 
+    expect(repositories.giftRepository.create).not.toHaveBeenCalled();
+    expect(repositories.ledgerRepository.create).not.toHaveBeenCalled();
+  });
+
+  it("does not create a gift when the wish owner's balance does not exist", async () => {
+    repositories.userBalanceRepository.findByUserIdAndCurrencyForUpdate.mockImplementation(
+      async (requestedUserId: string) => {
+        if (requestedUserId === userId) {
+          return balance;
+        }
+
+        return null;
+      },
+    );
+
+    await expect(
+      useCase.execute({
+        userId,
+        wishId,
+        amount: "100",
+        currency: PaymentCurrency.USD,
+      }),
+    ).rejects.toThrow(UserBalanceNotFoundException);
+
+    expect(balance.amount).toBe("1000");
     expect(repositories.giftRepository.create).not.toHaveBeenCalled();
     expect(repositories.ledgerRepository.create).not.toHaveBeenCalled();
   });

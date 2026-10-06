@@ -50,10 +50,11 @@ export class CreateGiftUseCase {
         ledgerRepository,
       }) => {
         /**
-         * A Wish row is locked before reading its current status and
-         * received amount. This serializes concurrent contributions to the
-         * same Wish and prevents two requests from both spending the last
-         * remaining target capacity.
+         * Lock the Wish before checking its state and received amount.
+         *
+         * This serializes concurrent Gifts targeting the same Wish and
+         * prevents two requests from both spending the same remaining
+         * target capacity.
          */
         const wish = input.wishId
           ? await wishRepository.findByIdForUpdate(input.wishId)
@@ -62,6 +63,8 @@ export class CreateGiftUseCase {
         if (input.wishId && !wish) {
           throw new WishNotFoundException();
         }
+
+        let recipientUserId: string | null = null;
 
         if (wish) {
           const list = await listRepository.findById(wish.listId);
@@ -76,6 +79,8 @@ export class CreateGiftUseCase {
           ) {
             throw new ListAccessNotAllowedException();
           }
+
+          recipientUserId = list.userId;
 
           if (wish.getStatus() === "COMPLETED") {
             throw new WishCompletedException();
@@ -108,20 +113,71 @@ export class CreateGiftUseCase {
           }
         }
 
-        const balance =
-          await userBalanceRepository.findByUserIdAndCurrencyForUpdate(
-            input.userId,
-            input.currency,
-          );
+        /**
+         * Balance rows are locked in deterministic user-ID order.
+         *
+         * Without a consistent order, two simultaneous transfers such as
+         * A -> B and B -> A could acquire their first balance lock in
+         * opposite order and deadlock while waiting for the second one.
+         *
+         * General cash Gifts only have the giver balance.
+         */
+        let giverBalance = null;
+        let recipientBalance = null;
 
-        if (!balance) {
+        if (recipientUserId === null) {
+          giverBalance =
+            await userBalanceRepository.findByUserIdAndCurrencyForUpdate(
+              input.userId,
+              input.currency,
+            );
+        } else if (recipientUserId === input.userId) {
+          giverBalance =
+            await userBalanceRepository.findByUserIdAndCurrencyForUpdate(
+              input.userId,
+              input.currency,
+            );
+          recipientBalance = giverBalance;
+        } else {
+          const firstUserId =
+            input.userId < recipientUserId ? input.userId : recipientUserId;
+
+          const secondUserId =
+            input.userId < recipientUserId ? recipientUserId : input.userId;
+
+          const firstBalance =
+            await userBalanceRepository.findByUserIdAndCurrencyForUpdate(
+              firstUserId,
+              input.currency,
+            );
+
+          const secondBalance =
+            await userBalanceRepository.findByUserIdAndCurrencyForUpdate(
+              secondUserId,
+              input.currency,
+            );
+
+          if (firstUserId === input.userId) {
+            giverBalance = firstBalance;
+            recipientBalance = secondBalance;
+          } else {
+            recipientBalance = firstBalance;
+            giverBalance = secondBalance;
+          }
+        }
+
+        if (!giverBalance) {
           throw new UserBalanceNotFoundException(input.currency);
         }
 
-        const balanceBefore = balance.amount;
+        if (recipientUserId !== null && !recipientBalance) {
+          throw new UserBalanceNotFoundException(input.currency);
+        }
+
+        const giverBalanceBefore = giverBalance.amount;
 
         try {
-          balance.debit(input.amount);
+          giverBalance.debit(input.amount);
         } catch (error) {
           if (error instanceof InsufficientBalanceException) {
             throw error;
@@ -130,7 +186,8 @@ export class CreateGiftUseCase {
           throw error;
         }
 
-        const savedBalance = await userBalanceRepository.save(balance);
+        const savedGiverBalance =
+          await userBalanceRepository.save(giverBalance);
 
         const gift = Gift.create({
           userId: input.userId,
@@ -143,13 +200,18 @@ export class CreateGiftUseCase {
 
         const savedGift = await giftRepository.create(gift);
 
+        /**
+         * The outgoing ledger entry references the Gift. The incoming
+         * recipient entry below uses the exact same referenceId, allowing
+         * both sides of the transfer to be matched to one Gift.
+         */
         await ledgerRepository.create(
           Ledger.create({
             userId: input.userId,
             currency: input.currency,
             amount: `-${input.amount}`,
-            balanceBefore,
-            balanceAfter: savedBalance.amount,
+            balanceBefore: giverBalanceBefore,
+            balanceAfter: savedGiverBalance.amount,
             type: LedgerType.TRANSFER_OUT,
             referenceId: savedGift.id,
             metadata: {
@@ -160,12 +222,40 @@ export class CreateGiftUseCase {
         );
 
         /**
-         * The Gift has now been persisted, so calculate the new received
-         * amount and complete the Wish when its target has been reached.
-         *
-         * `wish` is narrowed here before accessing its properties, which
-         * also guarantees that a general cash Gift can never reach this
-         * completion path.
+         * A targeted Gift is immediately transferred to the Wish owner's
+         * balance. There is intentionally no claim/status step: creating
+         * the Gift represents the completed transfer of funds.
+         */
+        if (recipientUserId !== null && recipientBalance) {
+          const recipientBalanceBefore = recipientBalance.amount;
+
+          recipientBalance.credit(input.amount);
+
+          const savedRecipientBalance =
+            await userBalanceRepository.save(recipientBalance);
+
+          await ledgerRepository.create(
+            Ledger.create({
+              userId: recipientUserId,
+              currency: input.currency,
+              amount: input.amount,
+              balanceBefore: recipientBalanceBefore,
+              balanceAfter: savedRecipientBalance.amount,
+              type: LedgerType.TRANSFER_IN,
+              referenceId: savedGift.id,
+              metadata: {
+                giftId: savedGift.id,
+                wishId: savedGift.wishId,
+                fromUserId: input.userId,
+              },
+            }),
+          );
+        }
+
+        /**
+         * The Gift is already persisted inside the same transaction.
+         * Recalculate the received amount and complete the Wish when its
+         * target has been reached.
          */
         if (wish && wish.targetAmount !== null) {
           const receivedAmount =

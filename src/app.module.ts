@@ -11,15 +11,16 @@ import { TicketsModule } from "./api/tickets/tickets.module";
 import { UsersModule } from "./api/users/users.module";
 import { WithdrawalsModule } from "./api/withdrawals/withdrawals.module";
 import { InfrastructureModule } from "./infrastructure/infrastructure.module";
+import { GiftsModule } from "@api/gifts/gifts.module";
 import { ListsModule } from "@api/lists/lists.module";
 import { WishesModule } from "@api/wishes/wishes.module";
 
 /**
  * Root application module.
  *
- * AppModule is the composition root of the NestJS application.
- * It connects the API modules with the shared infrastructure and
- * global framework-level configuration.
+ * AppModule is the composition root of the application.
+ * It connects the API modules with the shared infrastructure
+ * and global framework-level configuration.
  */
 @Module({
   imports: [
@@ -57,12 +58,12 @@ import { WishesModule } from "@api/wishes/wishes.module";
     // Financial API modules.
     DepositsModule,
     WithdrawalsModule,
+    GiftsModule,
 
     // Operational endpoints such as health checks.
     HealthModule,
 
     ListsModule,
-
     WishesModule,
   ],
 

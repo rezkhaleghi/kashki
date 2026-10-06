@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
 import { User } from "@domain/entities/user.entity";
-
 import {
   UserNotFoundException,
   UsernameAlreadyExistsException,
@@ -30,20 +29,22 @@ export class UpdateCurrentUserUseCase {
       throw new UserNotFoundException();
     }
 
-    if (input.userName !== undefined && input.userName !== null) {
-      const existingUser = await this.userRepository.findByUserName(
-        input.userName,
-      );
+    let userName = input.userName;
+
+    if (userName !== undefined && userName !== null) {
+      userName = userName.trim().toLowerCase();
+
+      const existingUser = await this.userRepository.findByUserName(userName);
 
       if (existingUser && existingUser.id !== userId) {
-        throw new UsernameAlreadyExistsException(input.userName);
+        throw new UsernameAlreadyExistsException(userName);
       }
     }
 
     user.update({
       firstName: input.firstName,
       lastName: input.lastName,
-      userName: input.userName,
+      userName,
       dateOfBirth: input.dateOfBirth,
       bio: input.bio,
       hideYear: input.hideYear,

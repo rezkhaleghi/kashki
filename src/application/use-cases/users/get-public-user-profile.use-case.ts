@@ -21,8 +21,15 @@ export class GetPublicUserProfileUseCase {
     private readonly giftRepository: GiftRepository,
   ) {}
 
-  async execute(userId: string) {
-    const user = await this.userRepository.findById(userId);
+  async execute(username: string) {
+    /**
+     * Public profile URLs are user-facing identifiers, so normalize the
+     * supplied username before querying. This makes /u/PocketJ and
+     * /u/pocketj resolve to the same account.
+     */
+    const normalizedUsername = username.trim().toLowerCase();
+
+    const user = await this.userRepository.findByUserName(normalizedUsername);
 
     /**
      * Restricted users should not remain discoverable through the public
@@ -33,7 +40,7 @@ export class GetPublicUserProfileUseCase {
       throw new UserNotFoundException();
     }
 
-    const lists = await this.findAllLists(userId);
+    const lists = await this.findAllLists(user.id);
 
     const publicLists = lists.filter(
       (list) => list.visibility === ListVisibility.PUBLIC,
@@ -49,11 +56,6 @@ export class GetPublicUserProfileUseCase {
       for (const wish of wishes) {
         let receivedAmount: string | null = null;
 
-        /**
-         * A targetless Wish has no single meaningful progress amount because
-         * gifts are allowed without a fixed target/currency. For target-based
-         * wishes, Gift creation guarantees a consistent currency.
-         */
         if (wish.targetAmount !== null && wish.currency !== null) {
           receivedAmount =
             await this.giftRepository.sumAmountByWishIdAndCurrency(

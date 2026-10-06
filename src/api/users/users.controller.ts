@@ -14,7 +14,6 @@ import {
   FileTypeValidator,
   Post,
   Param,
-  ParseUUIDPipe,
 } from "@nestjs/common";
 
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -42,19 +41,18 @@ import { SearchUsersUseCase } from "@application/use-cases/users/search-users.us
 import { GetUserBalancesUseCase } from "@application/use-cases/users/get-user-balances.use-case";
 import { ListNotificationsUseCase } from "@application/use-cases/notifications/list-notifications.use-case";
 import { ReadNotificationUseCase } from "@application/use-cases/notifications/read-notification.use-case";
+import { GetPublicUserProfileUseCase } from "@application/use-cases/users/get-public-user-profile.use-case";
+
 import { UpdateProfileDto } from "./dtos/update-profile.dto";
 import { AuthenticatedUserResponseDto } from "../auth/dtos/authenticated-user.response.dto";
-
 import { ListUserBalancesQueryDto } from "./dtos/list-user-balances.query.dto";
 import { SearchUsersQueryDto } from "./dtos/search-users.query.dto";
 import { ListNotificationsQueryDto } from "./dtos/list-notifications.query.dto";
 import { NotificationResponseDto } from "./dtos/notification.response.dto";
 import { PublicUserProfileResponseDto } from "./dtos/public-user-profile.response.dto";
-import { GetPublicUserProfileUseCase } from "@application/use-cases/users/get-public-user-profile.use-case";
 
 @ApiTags("users")
 @Controller("users")
-@UseGuards(AuthSessionGuard)
 export class UsersController {
   constructor(
     private readonly getCurrentUserUseCase: GetCurrentUserUseCase,
@@ -69,6 +67,7 @@ export class UsersController {
   ) {}
 
   @Get("me")
+  @UseGuards(AuthSessionGuard)
   @ApiOperation({
     summary: "Get the currently authenticated user's profile",
   })
@@ -88,6 +87,7 @@ export class UsersController {
   }
 
   @Get("me/balances")
+  @UseGuards(AuthSessionGuard)
   @ApiOperation({
     summary: "Get the currently authenticated user's balances",
     description:
@@ -114,6 +114,7 @@ export class UsersController {
   }
 
   @Patch("me")
+  @UseGuards(AuthSessionGuard)
   @ApiOperation({
     summary: "Update the currently authenticated user's profile",
   })
@@ -146,6 +147,7 @@ export class UsersController {
   }
 
   @Post("me/avatar")
+  @UseGuards(AuthSessionGuard)
   @UseInterceptors(FileInterceptor("file"))
   @ApiOperation({
     summary: "Update the currently authenticated user's avatar",
@@ -203,6 +205,7 @@ export class UsersController {
   }
 
   @Delete("me/avatar")
+  @UseGuards(AuthSessionGuard)
   @ApiOperation({
     summary: "Delete the currently authenticated user's avatar",
   })
@@ -237,6 +240,7 @@ export class UsersController {
   }
 
   @Get("me/notifications")
+  @UseGuards(AuthSessionGuard)
   @ApiOperation({
     summary: "List the current user's notifications",
   })
@@ -263,6 +267,7 @@ export class UsersController {
   }
 
   @Patch("me/notifications/:id/read")
+  @UseGuards(AuthSessionGuard)
   @ApiOperation({
     summary: "Mark one of the current user's in-app notifications as read",
   })
@@ -279,23 +284,20 @@ export class UsersController {
     status: 400,
     description: "Notification cannot be marked as read",
   })
-  async markNotificationAsRead(
-    @Param("id", ParseUUIDPipe) id: string,
-    @Req() req: Request,
-  ) {
+  async markNotificationAsRead(@Param("id") id: string, @Req() req: Request) {
     return this.readNotificationUseCase.execute(req.session.userId!, id);
   }
 
-  @Get(":userId")
+  @Get(":username")
   @ApiOperation({
     summary: "Get a user's public profile",
     description:
       "Returns public profile information, birthday presentation, public lists, and the wishes contained in those lists.",
   })
   @ApiParam({
-    name: "userId",
-    description: "Public user ID",
-    format: "uuid",
+    name: "username",
+    description: "Public username",
+    example: "pocketjack",
   })
   @ApiResponse({
     status: 200,
@@ -306,8 +308,8 @@ export class UsersController {
     status: 404,
     description: "User not found",
   })
-  async getPublicProfile(@Param("userId", ParseUUIDPipe) userId: string) {
-    return this.getPublicUserProfileUseCase.execute(userId);
+  async getPublicProfile(@Param("username") username: string) {
+    return this.getPublicUserProfileUseCase.execute(username);
   }
 
   private toUserResponse(user: User) {

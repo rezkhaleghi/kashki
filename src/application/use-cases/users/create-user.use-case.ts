@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 
 import { PasswordHasher } from "@application/interfaces/password-hasher.interface";
 import { CreateUserInput } from "@application/dtos/create-user.input";
@@ -8,18 +9,14 @@ import { User } from "@domain/entities/user.entity";
 import { UserBalance } from "@domain/entities/user-balance.entity";
 import { List } from "@domain/entities/list.entity";
 import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
-import { UserAlreadyExistsException } from "@domain/exceptions/domain.exception";
+import {
+  UserAlreadyExistsException,
+  UsernameAlreadyExistsException,
+} from "@domain/exceptions/domain.exception";
 import { normalizeEmail } from "@domain/utils/normalize-email";
 
-import { ConfigService } from "@nestjs/config";
 import { EnvironmentConfig } from "@infrastructure/config/environment.config";
 
-/**
- * The Birthday List is part of the user's initial aggregate setup.
- *
- * Keeping the name here avoids coupling the List domain entity to the
- * Kashki-specific concept of a default birthday list.
- */
 const DEFAULT_BIRTHDAY_LIST_NAME = "Birthday";
 
 @Injectable()
@@ -33,19 +30,36 @@ export class CreateUserUseCase {
   async execute(input: CreateUserInput): Promise<User> {
     const email = normalizeEmail(input.email);
 
+    /**
+     * Usernames are public identifiers, so we normalize them once at the
+     * application boundary. This keeps signup, profile URLs, and username
+     * lookup consistent regardless of casing entered by the client.
+     */
+    const userName = input.userName.trim().toLowerCase();
+
     const hashedPassword = await this.passwordHasher.hash(input.password);
 
     return this.unitOfWork.execute(
       async ({ userRepository, userBalanceRepository, listRepository }) => {
-        const existing = await userRepository.findByEmail(email);
+        const existingEmail = await userRepository.findByEmail(email);
 
-        if (existing) {
+        if (existingEmail) {
           throw new UserAlreadyExistsException(email);
+        }
+
+        const existingUsername = await userRepository.findByUserName(userName);
+
+        if (existingUsername) {
+          throw new UsernameAlreadyExistsException(userName);
         }
 
         const user = User.create({
           email,
           hashedPassword,
+        });
+
+        user.update({
+          userName,
         });
 
         user.verifyEmail();
@@ -66,10 +80,13 @@ export class CreateUserUseCase {
           name: DEFAULT_BIRTHDAY_LIST_NAME,
         });
 
-        /*
+        /**
          * User, balance, and default list intentionally live in the same
          * UnitOfWork transaction. A newly-created user must never exist
-         * without the Birthday List that the product guarantees.
+         * without the Birthday List guaranteed by the product.
+         *
+         * The username uniqueness constraint in PostgreSQL remains the final
+         * authority against concurrent signup races.
          */
         await userRepository.save(user);
         await userBalanceRepository.create(balance);

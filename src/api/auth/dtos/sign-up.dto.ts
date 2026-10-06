@@ -4,11 +4,18 @@ import { IsEmail, IsString, Length, MinLength } from "class-validator";
 /**
  * HTTP contract for user registration.
  *
- * The OTP is intentionally part of this DTO because the client submits it
- * together with the registration credentials. It is consumed by the
- * application layer and never persisted as part of the User entity.
+ * The username is collected during signup because Kashki uses it as the
+ * stable, human-readable identifier in public profile URLs.
  */
 export class SignUpDto {
+  @ApiProperty({
+    example: "pocketj",
+    description: "Unique public username used in the user's profile URL.",
+  })
+  @IsString()
+  @Length(3, 50)
+  userName!: string;
+
   @ApiProperty({
     example: "user@gmail.com",
   })

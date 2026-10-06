@@ -1,9 +1,11 @@
 /**
- * Application-layer input — the minimal shape a use case needs.
- * Notice: no `otp` field here. By the time we create a user,
- * OTP verification has already happened as a separate use case.
+ * Application-layer input — the minimal shape the create-user use case needs.
+ *
+ * OTP verification happens before this use case, so OTP does not belong here.
+ * Username is required because it is the user's public identity in Kashki.
  */
 export class CreateUserInput {
   email!: string;
   password!: string;
+  userName!: string;
 }

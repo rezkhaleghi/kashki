@@ -95,6 +95,7 @@ export class AuthController {
     const user = await this.createUserUseCase.execute({
       email: dto.email,
       password: dto.password,
+      userName: dto.userName,
     });
 
     await this.establishSession(req, user.id);

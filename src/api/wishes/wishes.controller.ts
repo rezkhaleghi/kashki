@@ -52,6 +52,7 @@ export class WishesController {
       listId,
       title: dto.title,
       description: dto.description,
+      links: dto.links,
       targetAmount: dto.targetAmount,
       currency: dto.currency,
     });
@@ -116,6 +117,7 @@ export class WishesController {
       wishId,
       title: dto.title,
       description: dto.description,
+      links: dto.links,
       targetAmount: dto.targetAmount,
       currency: dto.currency,
     });

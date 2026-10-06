@@ -1,9 +1,12 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import {
+  ArrayMaxSize,
+  IsArray,
   IsEnum,
   IsNumberString,
   IsOptional,
   IsString,
+  IsUrl,
   MaxLength,
   MinLength,
 } from "class-validator";
@@ -31,6 +34,28 @@ export class UpdateWishDto {
   @IsString()
   @MaxLength(1000)
   description?: string | null;
+
+  @ApiPropertyOptional({
+    example: [
+      "https://www.amazon.com/dp/example",
+      "https://www.digikala.com/product/example",
+    ],
+    description: "Product/store links for the wish. Maximum 10 links.",
+    maxItems: 10,
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  @IsUrl(
+    {
+      protocols: ["http", "https"],
+      require_protocol: true,
+    },
+    { each: true },
+  )
+  links?: string[];
 
   @ApiPropertyOptional({
     example: "1500",

@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { UnitOfWork } from "@application/interfaces/unit-of-work.interface";
 
 import { Wish } from "@domain/entities/wish.entity";
+import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
 import {
   ListNotFoundException,
   WishNotFoundException,
@@ -15,10 +16,9 @@ export interface UpdateWishInput {
 
   title?: string;
   description?: string | null;
+  links?: string[];
   targetAmount?: string | null;
-  currency?:
-    | import("@domain/enums/payment-currency.enum").PaymentCurrency
-    | null;
+  currency?: PaymentCurrency | null;
 }
 
 @Injectable()
@@ -44,9 +44,6 @@ export class UpdateWishUseCase {
 
         /**
          * Wish is locked after its parent List.
-         *
-         * The ownership check is deliberately performed against the
-         * locked List rather than trusting the route parameters.
          */
         const wish = await wishRepository.findByIdForUpdate(input.wishId);
 
@@ -54,25 +51,10 @@ export class UpdateWishUseCase {
           throw new WishNotFoundException();
         }
 
-        /**
-         * A Wish belongs to exactly one List. Reject a mismatched route
-         * instead of allowing a Wish to be modified through another List.
-         */
         if (wish.listId !== list.id) {
           throw new ListNotFoundException();
         }
 
-        /**
-         * Gift totals are persistent financial history. We pass the
-         * received amount into the domain so Wish.update() can enforce:
-         *
-         * - target cannot fall below received gifts
-         * - currency cannot change after gifts
-         * - completed wishes can only be reopened by increasing target
-         *
-         * A targetless Wish cannot have targeted Gifts, therefore there
-         * cannot be received targeted Gift money while currency is null.
-         */
         const receivedAmount = wish.currency
           ? await giftRepository.sumAmountByWishIdAndCurrency(
               wish.id,
@@ -84,6 +66,7 @@ export class UpdateWishUseCase {
           {
             title: input.title,
             description: input.description,
+            links: input.links,
             targetAmount: input.targetAmount,
             currency: input.currency,
           },

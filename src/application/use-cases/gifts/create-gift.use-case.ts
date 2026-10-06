@@ -1,10 +1,15 @@
 import { Injectable } from "@nestjs/common";
 
+import { UnitOfWork } from "@application/interfaces/unit-of-work.interface";
+
 import { Gift } from "@domain/entities/gift.entity";
 import { Ledger } from "@domain/entities/ledger.entity";
+import { Notification } from "@domain/entities/notification.entity";
 
 import { ListVisibility } from "@domain/enums/list-visibility.enum";
 import { LedgerType } from "@domain/enums/ledger-type.enum";
+import { NotificationChannel } from "@domain/enums/notification-channel.enum";
+import { NotificationType } from "@domain/enums/notification-type.enum";
 import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
 
 import {
@@ -25,8 +30,6 @@ import {
   isZeroDecimal,
   subtractDecimal,
 } from "@domain/utils/decimal.util";
-
-import { UnitOfWork } from "@application/interfaces/unit-of-work.interface";
 
 export interface CreateGiftInput {
   userId: string;
@@ -50,6 +53,7 @@ export class CreateGiftUseCase {
         giftRepository,
         userBalanceRepository,
         ledgerRepository,
+        notificationRepository,
       }) => {
         let wish = null;
         let recipientUserId: string | null = null;
@@ -274,6 +278,31 @@ export class CreateGiftUseCase {
             await wishRepository.save(wish);
           }
         }
+
+        /**
+         * The notification is persisted through the same UnitOfWork as the
+         * financial transfer. Therefore a rolled-back Gift transaction cannot
+         * leave behind a false "gift received" notification.
+         *
+         * We only create an in-app notification here. External delivery
+         * channels remain independent from the financial transaction.
+         */
+        const wishDescription = wish ? ` for your "${wish.title}" wish` : "";
+
+        const notification = Notification.create({
+          userId: recipientUserId,
+          type: NotificationType.GIFT_RECEIVED,
+          channel: NotificationChannel.IN_APP,
+          title: "You received a gift 🎁",
+          message: input.anonymous
+            ? `You received an anonymous gift of ${input.amount} ${input.currency}${wishDescription}.`
+            : `You received a gift of ${input.amount} ${input.currency}${wishDescription}.`,
+          referenceId: savedGift.id,
+        });
+
+        notification.markSent();
+
+        await notificationRepository.create(notification);
 
         return savedGift;
       },

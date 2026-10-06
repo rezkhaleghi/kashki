@@ -37,6 +37,20 @@ export class WishOrmEntity {
   @Column({ type: "varchar", nullable: true })
   description!: string | null;
 
+  /**
+   * A Wish owns its product links directly.
+   *
+   * A separate WishLink table would add joins and CRUD complexity without
+   * giving the MVP any useful capability. If links later need metadata such
+   * as store name, label, priority, or price snapshots, this can be migrated
+   * to a dedicated entity.
+   */
+  @Column({
+    type: "jsonb",
+    default: () => "'[]'",
+  })
+  links!: string[];
+
   @Column({
     type: "decimal",
     precision: 30,

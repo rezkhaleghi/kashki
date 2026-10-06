@@ -102,6 +102,7 @@ export class AdminWishesController {
       wishId: id,
       title: dto.title,
       description: dto.description,
+      links: dto.links,
       targetAmount: dto.targetAmount,
       currency: dto.currency,
     });

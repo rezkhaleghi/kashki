@@ -1,16 +1,17 @@
 import { Injectable } from "@nestjs/common";
 
 import { Wish } from "@domain/entities/wish.entity";
+import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
 import { ListNotFoundException } from "@domain/exceptions/domain.exception";
 import { ListRepository } from "@domain/repositories/list.repository";
 import { WishRepository } from "@domain/repositories/wish.repository";
-import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
 
 export interface CreateWishInput {
   userId: string;
   listId: string;
   title: string;
   description?: string | null;
+  links?: string[];
   targetAmount?: string | null;
   currency?: PaymentCurrency | null;
 }
@@ -36,6 +37,7 @@ export class CreateWishUseCase {
       listId: list.id,
       title: input.title,
       description: input.description,
+      links: input.links,
       targetAmount: input.targetAmount,
       currency: input.currency,
     });

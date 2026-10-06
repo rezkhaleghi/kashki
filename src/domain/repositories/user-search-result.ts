@@ -6,6 +6,6 @@ export interface UserSearchResult {
   avatar: string | null;
   bio: string | null;
   email: string;
-  dateOfBirth: Date | null;
+  // dateOfBirth: Date | null;
   createdAt: Date;
 }

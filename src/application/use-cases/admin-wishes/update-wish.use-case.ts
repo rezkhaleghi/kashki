@@ -3,11 +3,11 @@ import { Injectable } from "@nestjs/common";
 import { UnitOfWork } from "@application/interfaces/unit-of-work.interface";
 
 import { Wish } from "@domain/entities/wish.entity";
+import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
 import {
   ListNotFoundException,
   WishNotFoundException,
 } from "@domain/exceptions/domain.exception";
-import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
 
 export interface AdminUpdateWishInput {
   listId: string;
@@ -15,6 +15,7 @@ export interface AdminUpdateWishInput {
 
   title?: string;
   description?: string | null;
+  links?: string[];
   targetAmount?: string | null;
   currency?: PaymentCurrency | null;
 }
@@ -27,7 +28,7 @@ export class AdminUpdateWishUseCase {
     return this.unitOfWork.execute(
       async ({ listRepository, wishRepository, giftRepository }) => {
         /**
-         * Admin operations still use the same locking discipline as user
+         * Admin operations use the same locking discipline as user
          * operations. Administrative privilege must not create a second
          * concurrency model around financial data.
          */
@@ -58,6 +59,7 @@ export class AdminUpdateWishUseCase {
           {
             title: input.title,
             description: input.description,
+            links: input.links,
             targetAmount: input.targetAmount,
             currency: input.currency,
           },

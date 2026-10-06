@@ -68,6 +68,7 @@ export class GetPublicUserProfileUseCase {
           id: wish.id,
           title: wish.title,
           description: wish.description,
+          links: wish.links,
           targetAmount: wish.targetAmount,
           currency: wish.currency,
           status: wish.getStatus(),

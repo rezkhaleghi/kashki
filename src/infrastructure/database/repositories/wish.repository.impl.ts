@@ -109,6 +109,7 @@ export class WishRepositoryImpl implements WishRepository {
       listId: row.listId,
       title: row.title,
       description: row.description,
+      links: row.links ?? [],
       targetAmount: row.targetAmount,
       currency: row.currency,
       status: row.status,
@@ -124,6 +125,7 @@ export class WishRepositoryImpl implements WishRepository {
     row.listId = wish.listId;
     row.title = wish.title;
     row.description = wish.description;
+    row.links = [...wish.links];
     row.targetAmount = wish.targetAmount;
     row.currency = wish.currency;
     row.status = wish.getStatus();

@@ -20,6 +20,7 @@ export interface CreateWishProps {
   listId: string;
   title: string;
   description?: string | null;
+  links?: string[];
   targetAmount?: string | null;
   currency?: PaymentCurrency | null;
   status?: WishStatus;
@@ -30,6 +31,7 @@ export interface CreateWishProps {
 export interface UpdateWishParams {
   title?: string;
   description?: string | null;
+  links?: string[];
   targetAmount?: string | null;
   currency?: PaymentCurrency | null;
 }
@@ -39,6 +41,7 @@ export interface RestoreWishProps {
   listId: string;
   title: string;
   description: string | null;
+  links: string[];
   targetAmount: string | null;
   currency: PaymentCurrency | null;
   status: WishStatus;
@@ -52,6 +55,7 @@ export class Wish {
     public readonly listId: string,
     public title: string,
     public description: string | null,
+    public links: string[],
     public targetAmount: string | null,
     public currency: PaymentCurrency | null,
     private status: WishStatus,
@@ -90,6 +94,7 @@ export class Wish {
       props.listId,
       title,
       props.description?.trim() ?? null,
+      [...(props.links ?? [])],
       props.targetAmount ?? null,
       props.currency ?? null,
       props.status ?? WishStatus.ACTIVE,
@@ -104,6 +109,7 @@ export class Wish {
       props.listId,
       props.title,
       props.description,
+      [...props.links],
       props.targetAmount,
       props.currency,
       props.status,
@@ -155,6 +161,10 @@ export class Wish {
 
     if (params.description !== undefined) {
       this.description = params.description?.trim() ?? null;
+    }
+
+    if (params.links !== undefined) {
+      this.links = [...params.links];
     }
 
     if (params.targetAmount !== undefined) {

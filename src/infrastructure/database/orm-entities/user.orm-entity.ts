@@ -10,16 +10,6 @@ import {
 import { UserRole } from "@domain/enums/user-role.enum";
 import { UserStatus } from "@domain/enums/user-status.enum";
 
-/**
- * ORM entity — TypeORM-specific shape of a user row.
- *
- * This is deliberately separate from the domain User entity.
- * The domain never imports this file.
- *
- * TypeORM creates and hydrates these entities, so the `!` definite
- * assignment assertions tell TypeScript that these properties will be
- * initialized by the ORM rather than by a constructor.
- */
 @Entity("users")
 @Index(["createdAt"])
 @Index(["role"])
@@ -49,6 +39,15 @@ export class UserOrmEntity {
 
   @Column({ nullable: true, type: "date" })
   dateOfBirth!: Date | null;
+
+  /**
+   * Controls public birthday presentation.
+   *
+   * false => YYYY-MM-DD
+   * true  => MM-DD
+   */
+  @Column({ default: false })
+  hideYear!: boolean;
 
   @Column({
     type: "enum",

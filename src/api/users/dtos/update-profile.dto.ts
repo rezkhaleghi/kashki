@@ -1,5 +1,11 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsDateString, IsOptional, IsString, Length } from "class-validator";
+import {
+  IsBoolean,
+  IsDateString,
+  IsOptional,
+  IsString,
+  Length,
+} from "class-validator";
 
 export class UpdateProfileDto {
   @ApiPropertyOptional({ example: "Jane", nullable: true })
@@ -29,4 +35,13 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   bio?: string | null;
+
+  @ApiPropertyOptional({
+    example: false,
+    description:
+      "When true, the public profile shows only the birthday month and day.",
+  })
+  @IsOptional()
+  @IsBoolean()
+  hideYear?: boolean;
 }

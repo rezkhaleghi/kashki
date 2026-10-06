@@ -23,6 +23,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
@@ -41,13 +42,15 @@ import { SearchUsersUseCase } from "@application/use-cases/users/search-users.us
 import { GetUserBalancesUseCase } from "@application/use-cases/users/get-user-balances.use-case";
 import { ListNotificationsUseCase } from "@application/use-cases/notifications/list-notifications.use-case";
 import { ReadNotificationUseCase } from "@application/use-cases/notifications/read-notification.use-case";
-import { UpdateProfileDto } from "../auth/dtos/update-profile.dto";
+import { UpdateProfileDto } from "./dtos/update-profile.dto";
 import { AuthenticatedUserResponseDto } from "../auth/dtos/authenticated-user.response.dto";
 
 import { ListUserBalancesQueryDto } from "./dtos/list-user-balances.query.dto";
 import { SearchUsersQueryDto } from "./dtos/search-users.query.dto";
 import { ListNotificationsQueryDto } from "./dtos/list-notifications.query.dto";
 import { NotificationResponseDto } from "./dtos/notification.response.dto";
+import { PublicUserProfileResponseDto } from "./dtos/public-user-profile.response.dto";
+import { GetPublicUserProfileUseCase } from "@application/use-cases/users/get-public-user-profile.use-case";
 
 @ApiTags("users")
 @Controller("users")
@@ -62,6 +65,7 @@ export class UsersController {
     private readonly searchUsersUseCase: SearchUsersUseCase,
     private readonly listNotificationsUseCase: ListNotificationsUseCase,
     private readonly readNotificationUseCase: ReadNotificationUseCase,
+    private readonly getPublicUserProfileUseCase: GetPublicUserProfileUseCase,
   ) {}
 
   @Get("me")
@@ -134,6 +138,7 @@ export class UsersController {
             ? dto.dateOfBirth
             : new Date(dto.dateOfBirth),
         bio: dto.bio,
+        hideYear: dto.hideYear,
       },
     );
 
@@ -281,6 +286,30 @@ export class UsersController {
     return this.readNotificationUseCase.execute(req.session.userId!, id);
   }
 
+  @Get(":userId")
+  @ApiOperation({
+    summary: "Get a user's public profile",
+    description:
+      "Returns public profile information, birthday presentation, public lists, and the wishes contained in those lists.",
+  })
+  @ApiParam({
+    name: "userId",
+    description: "Public user ID",
+    format: "uuid",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Public user profile",
+    type: PublicUserProfileResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: "User not found",
+  })
+  async getPublicProfile(@Param("userId", ParseUUIDPipe) userId: string) {
+    return this.getPublicUserProfileUseCase.execute(userId);
+  }
+
   private toUserResponse(user: User) {
     return {
       id: user.id,
@@ -292,6 +321,7 @@ export class UsersController {
       dateOfBirth: user.dateOfBirth,
       avatar: user.avatar,
       bio: user.bio,
+      hideYear: user.hideYear,
     };
   }
 }

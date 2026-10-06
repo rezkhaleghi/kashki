@@ -21,6 +21,7 @@ export class UpdateCurrentUserUseCase {
       userName?: string | null;
       dateOfBirth?: Date | null;
       bio?: string | null;
+      hideYear?: boolean;
     },
   ): Promise<User> {
     const user = await this.userRepository.findById(userId);
@@ -39,21 +40,13 @@ export class UpdateCurrentUserUseCase {
       }
     }
 
-    /**
-     * The use case decides which fields the current user is allowed
-     * to modify.
-     *
-     * The domain entity then applies those changes to itself.
-     *
-     * This prevents the API DTO from being coupled directly to
-     * the domain layer.
-     */
     user.update({
       firstName: input.firstName,
       lastName: input.lastName,
       userName: input.userName,
       dateOfBirth: input.dateOfBirth,
       bio: input.bio,
+      hideYear: input.hideYear,
     });
 
     return this.userRepository.save(user);

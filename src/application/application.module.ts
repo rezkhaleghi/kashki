@@ -81,6 +81,7 @@ import { DeleteWishUseCase } from "./use-cases/wishes/delete-wish.use-case";
 import { AdminDeleteWishUseCase } from "./use-cases/admin-wishes/delete-wish.use-case";
 import { AdminUpdateWishUseCase } from "./use-cases/admin-wishes/update-wish.use-case";
 import { UpdateWishUseCase } from "./use-cases/wishes/update-wish.use-case";
+import { GetPublicUserProfileUseCase } from "./use-cases/users/get-public-user-profile.use-case";
 
 /**
  * Registers application use cases. Infrastructure bindings are supplied by
@@ -99,6 +100,7 @@ import { UpdateWishUseCase } from "./use-cases/wishes/update-wish.use-case";
     DeleteUserAvatarUseCase,
     SearchUsersUseCase,
     GetUserBalancesUseCase,
+    GetPublicUserProfileUseCase,
 
     // Auth
     VerifyOtpUseCase,
@@ -206,6 +208,7 @@ import { UpdateWishUseCase } from "./use-cases/wishes/update-wish.use-case";
     DeleteUserAvatarUseCase,
     SearchUsersUseCase,
     GetUserBalancesUseCase,
+    GetPublicUserProfileUseCase,
 
     // Auth
     VerifyOtpUseCase,

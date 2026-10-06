@@ -417,6 +417,7 @@ export class UserRepositoryImpl implements UserRepository {
       dateOfBirth: row.dateOfBirth,
       avatar: row.avatar,
       bio: row.bio,
+      hideYear: row.hideYear,
       status: row.status,
     });
   }
@@ -434,6 +435,7 @@ export class UserRepositoryImpl implements UserRepository {
     row.lastName = user.lastName;
     row.userName = user.userName;
     row.dateOfBirth = user.dateOfBirth;
+    row.hideYear = user.hideYear;
     row.createdAt = user.createdAt;
     row.updatedAt = user.updatedAt;
     row.avatar = user.avatar;

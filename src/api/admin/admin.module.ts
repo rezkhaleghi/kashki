@@ -10,6 +10,7 @@ import { AdminTicketsController } from "./admin-tickets.controller";
 import { AdminNotificationsController } from "./admin-notifications.controller";
 import { AdminListsController } from "./admin-lists.controller";
 import { AdminWishesController } from "./admin-wishes.controller";
+import { AdminGiftsController } from "./admin-gifts.controller";
 
 @Module({
   imports: [ApplicationModule],
@@ -24,6 +25,7 @@ import { AdminWishesController } from "./admin-wishes.controller";
     AdminNotificationsController,
     AdminListsController,
     AdminWishesController,
+    AdminGiftsController,
   ],
 
   providers: [AdminAuthGuard],

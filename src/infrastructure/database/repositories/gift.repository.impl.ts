@@ -3,7 +3,10 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
 import { Gift } from "@domain/entities/gift.entity";
-import { GiftRepository } from "@domain/repositories/gift.repository";
+import {
+  GiftRepository,
+  GiftFilters,
+} from "@domain/repositories/gift.repository";
 import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
 import { PageQuery, PageResult } from "@shared/pagination/page-query";
 
@@ -34,36 +37,49 @@ export class GiftRepositoryImpl implements GiftRepository {
     wishId: string,
     params: PageQuery<"createdAt" | "amount">,
   ): Promise<PageResult<Gift>> {
-    const [rows, total] = await this.repo.findAndCount({
-      where: { wishId },
-      order: {
-        [params.sortBy ?? "createdAt"]: params.sortDirection ?? "DESC",
-      },
-      skip: (params.page - 1) * params.limit,
-      take: params.limit,
-    });
-
-    return {
-      data: rows.map((row) => this.toDomain(row)),
-      page: params.page,
-      limit: params.limit,
-      total,
-      totalPages: Math.ceil(total / params.limit),
-    };
+    return this.findPage({ wishId }, params);
   }
 
   async findPageByUserId(
     userId: string,
     params: PageQuery<"createdAt" | "amount">,
   ): Promise<PageResult<Gift>> {
-    const [rows, total] = await this.repo.findAndCount({
-      where: { userId },
-      order: {
-        [params.sortBy ?? "createdAt"]: params.sortDirection ?? "DESC",
-      },
-      skip: (params.page - 1) * params.limit,
-      take: params.limit,
-    });
+    return this.findPage({ userId }, params);
+  }
+
+  async findPage(
+    filters: GiftFilters,
+    params: PageQuery<"createdAt" | "amount">,
+  ): Promise<PageResult<Gift>> {
+    const query = this.repo.createQueryBuilder("gift");
+
+    if (filters.userId) {
+      query.andWhere("gift.userId = :userId", {
+        userId: filters.userId,
+      });
+    }
+
+    if (filters.wishId) {
+      query.andWhere("gift.wishId = :wishId", {
+        wishId: filters.wishId,
+      });
+    }
+
+    if (filters.currency) {
+      query.andWhere("gift.currency = :currency", {
+        currency: filters.currency,
+      });
+    }
+
+    const sortBy = params.sortBy ?? "createdAt";
+    const sortDirection = params.sortDirection ?? "DESC";
+
+    query
+      .orderBy(`gift.${sortBy}`, sortDirection)
+      .skip((params.page - 1) * params.limit)
+      .take(params.limit);
+
+    const [rows, total] = await query.getManyAndCount();
 
     return {
       data: rows.map((row) => this.toDomain(row)),

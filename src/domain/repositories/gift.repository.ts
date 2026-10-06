@@ -2,6 +2,12 @@ import { Gift } from "@domain/entities/gift.entity";
 import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
 import { PageQuery, PageResult } from "@shared/pagination/page-query";
 
+export interface GiftFilters {
+  userId?: string;
+  wishId?: string;
+  currency?: PaymentCurrency;
+}
+
 export abstract class GiftRepository {
   abstract create(gift: Gift): Promise<Gift>;
 
@@ -14,6 +20,11 @@ export abstract class GiftRepository {
 
   abstract findPageByUserId(
     userId: string,
+    params: PageQuery<"createdAt" | "amount">,
+  ): Promise<PageResult<Gift>>;
+
+  abstract findPage(
+    filters: GiftFilters,
     params: PageQuery<"createdAt" | "amount">,
   ): Promise<PageResult<Gift>>;
 

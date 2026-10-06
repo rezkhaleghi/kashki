@@ -91,6 +91,9 @@ import { ListRepositoryImpl } from "./database/repositories/list.repository.impl
 import { WishOrmEntity } from "./database/orm-entities/wish.orm-entity";
 import { WishRepository } from "@domain/repositories/wish.repository";
 import { WishRepositoryImpl } from "./database/repositories/wish.repository.impl";
+import { GiftRepository } from "@domain/repositories/gift.repository";
+import { GiftRepositoryImpl } from "./database/repositories/gift.repository.impl";
+import { GiftOrmEntity } from "./database/orm-entities/gift.orm-entity";
 /**
  * Infrastructure composition root.
  *
@@ -267,6 +270,7 @@ import { WishRepositoryImpl } from "./database/repositories/wish.repository.impl
       NotificationOrmEntity,
       ListOrmEntity,
       WishOrmEntity,
+      GiftOrmEntity,
     ]),
   ],
 
@@ -438,6 +442,10 @@ import { WishRepositoryImpl } from "./database/repositories/wish.repository.impl
       provide: WishRepository,
       useClass: WishRepositoryImpl,
     },
+    {
+      provide: GiftRepository,
+      useClass: GiftRepositoryImpl,
+    },
   ],
 
   exports: [
@@ -464,6 +472,7 @@ import { WishRepositoryImpl } from "./database/repositories/wish.repository.impl
     NotificationRepository,
     ListRepository,
     WishRepository,
+    GiftRepository,
   ],
 })
 export class InfrastructureModule {}

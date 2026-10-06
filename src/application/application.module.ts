@@ -73,6 +73,10 @@ import { ListWishesUseCase } from "./use-cases/wishes/list-wishes.use-case";
 import { GetWishUseCase } from "./use-cases/wishes/get-wish.use-case";
 import { AdminListWishesUseCase } from "./use-cases/admin-wishes/list-wishes.use-case";
 import { AdminGetWishUseCase } from "./use-cases/admin-wishes/get-wish.use-case";
+import { CreateGiftUseCase } from "./use-cases/gifts/create-gift.use-case";
+import { ListGiftsUseCase } from "./use-cases/gifts/list-gifts.use-case";
+import { AdminListGiftsUseCase } from "./use-cases/admin-gifts/list-gifts.use-case";
+import { AdminGetGiftUseCase } from "./use-cases/admin-gifts/get-gift.use-case";
 
 /**
  * Registers application use cases. Infrastructure bindings are supplied by
@@ -131,6 +135,14 @@ import { AdminGetWishUseCase } from "./use-cases/admin-wishes/get-wish.use-case"
     CreateWishUseCase,
     ListWishesUseCase,
     GetWishUseCase,
+
+    // Gifts
+    CreateGiftUseCase,
+    ListGiftsUseCase,
+
+    // Admin Gifts
+    AdminListGiftsUseCase,
+    AdminGetGiftUseCase,
 
     // Admin Wishes
     AdminListWishesUseCase,
@@ -245,6 +257,14 @@ import { AdminGetWishUseCase } from "./use-cases/admin-wishes/get-wish.use-case"
     CreateWishUseCase,
     ListWishesUseCase,
     GetWishUseCase,
+
+    // Gifts
+    CreateGiftUseCase,
+    ListGiftsUseCase,
+
+    // Admin Gifts
+    AdminListGiftsUseCase,
+    AdminGetGiftUseCase,
 
     // Admin Wishes
     AdminListWishesUseCase,

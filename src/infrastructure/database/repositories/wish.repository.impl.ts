@@ -35,6 +35,17 @@ export class WishRepositoryImpl implements WishRepository {
     return row ? this.toDomain(row) : null;
   }
 
+  async findByIdForUpdate(id: string): Promise<Wish | null> {
+    const row = await this.repo.findOne({
+      where: { id },
+      lock: {
+        mode: "pessimistic_write",
+      },
+    });
+
+    return row ? this.toDomain(row) : null;
+  }
+
   async findByListIdAndId(listId: string, id: string): Promise<Wish | null> {
     const row = await this.repo.findOne({
       where: {

@@ -17,6 +17,7 @@ describe("AdminGetWishUseCase", () => {
       findPageByListId: jest.fn(),
       findPage: jest.fn(),
       deleteById: jest.fn(),
+      findByIdForUpdate: jest.fn(),
     };
 
     useCase = new AdminGetWishUseCase(wishRepository);

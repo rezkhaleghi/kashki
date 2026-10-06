@@ -16,6 +16,9 @@ import { TicketRepositoryImpl } from "./repositories/ticket.repository.impl";
 import { TicketMessageRepositoryImpl } from "./repositories/ticket-message.repository.impl";
 import { TicketCategoryRepositoryImpl } from "./repositories/ticket-category.repository.impl";
 import { NotificationRepositoryImpl } from "./repositories/notification.repository.impl";
+import { ListRepositoryImpl } from "./repositories/list.repository.impl";
+import { WishRepositoryImpl } from "./repositories/wish.repository.impl";
+import { GiftRepositoryImpl } from "./repositories/gift.repository.impl";
 
 import { UserOrmEntity } from "./orm-entities/user.orm-entity";
 import { UserBalanceOrmEntity } from "./orm-entities/user-balance.orm-entity";
@@ -27,6 +30,9 @@ import { TicketOrmEntity } from "./orm-entities/ticket.orm-entity";
 import { TicketMessageOrmEntity } from "./orm-entities/ticket-message.orm-entity";
 import { TicketCategoryOrmEntity } from "./orm-entities/ticket-category.orm-entity";
 import { NotificationOrmEntity } from "./orm-entities/notification.orm-entity";
+import { ListOrmEntity } from "./orm-entities/list.orm-entity";
+import { WishOrmEntity } from "./orm-entities/wish.orm-entity";
+import { GiftOrmEntity } from "./orm-entities/gift.orm-entity";
 
 @Injectable()
 export class TypeOrmUnitOfWork implements UnitOfWork {
@@ -76,6 +82,18 @@ export class TypeOrmUnitOfWork implements UnitOfWork {
         manager.getRepository(NotificationOrmEntity),
       );
 
+      const listRepository = new ListRepositoryImpl(
+        manager.getRepository(ListOrmEntity),
+      );
+
+      const wishRepository = new WishRepositoryImpl(
+        manager.getRepository(WishOrmEntity),
+      );
+
+      const giftRepository = new GiftRepositoryImpl(
+        manager.getRepository(GiftOrmEntity),
+      );
+
       return work({
         userRepository,
         userBalanceRepository,
@@ -87,6 +105,9 @@ export class TypeOrmUnitOfWork implements UnitOfWork {
         ticketMessageRepository,
         ticketCategoryRepository,
         notificationRepository,
+        listRepository,
+        wishRepository,
+        giftRepository,
       });
     });
   }

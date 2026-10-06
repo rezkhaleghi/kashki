@@ -8,6 +8,8 @@ export abstract class WishRepository {
 
   abstract findById(id: string): Promise<Wish | null>;
 
+  abstract findByIdForUpdate(id: string): Promise<Wish | null>;
+
   abstract findByListIdAndId(listId: string, id: string): Promise<Wish | null>;
 
   abstract findPageByListId(

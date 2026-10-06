@@ -1,7 +1,8 @@
 /**
  * Base class for all domain-level errors.
- * These represent business rule violations, not HTTP or infrastructure errors.
- * The API layer is responsible for translating these into proper HTTP responses.
+ *
+ * These represent business rule violations, not HTTP or infrastructure
+ * errors. The API layer translates them into proper HTTP responses.
  */
 export class DomainException extends Error {
   constructor(message: string) {
@@ -82,7 +83,7 @@ export class FileNotFoundException extends DomainException {
   }
 }
 
-//userBalance
+// User balance
 
 export class UserBalanceNotFoundException extends DomainException {
   constructor(currency: string) {
@@ -122,7 +123,7 @@ export class UnsupportedPaymentCurrencyException extends DomainException {
   }
 }
 
-//withdrawal
+// Withdrawal
 
 export class InvalidWithdrawalAmountException extends DomainException {
   constructor() {
@@ -142,7 +143,7 @@ export class WithdrawalStatusChangeNotAllowedException extends DomainException {
   }
 }
 
-//deposit
+// Deposit
 
 export class InvalidDepositAmountException extends DomainException {
   constructor() {
@@ -176,7 +177,7 @@ export class DepositIdempotencyConflictException extends DomainException {
   }
 }
 
-//ticket
+// Ticket
 
 export class TicketNotFoundException extends DomainException {
   constructor() {
@@ -220,7 +221,7 @@ export class TicketCategoryAlreadyExistsException extends DomainException {
   }
 }
 
-// Decimal utility exceptions
+// Decimal utility
 
 export class InvalidDecimalValueException extends DomainException {
   constructor(value: string) {
@@ -236,7 +237,7 @@ export class DecimalScaleExceededException extends DomainException {
   }
 }
 
-// Payment provider exceptions
+// Payment provider
 
 export class UnsupportedPaymentProviderException extends DomainException {
   constructor(provider: string) {
@@ -297,5 +298,37 @@ export class WishTargetAmountTooLowException extends DomainException {
 export class WishCurrencyChangeNotAllowedException extends DomainException {
   constructor() {
     super("Wish currency cannot be changed after receiving gifts.");
+  }
+}
+
+// Gift
+
+export class GiftNotFoundException extends DomainException {
+  constructor() {
+    super("Gift not found.");
+  }
+}
+
+export class InvalidGiftAmountException extends DomainException {
+  constructor() {
+    super("Gift amount must be positive.");
+  }
+}
+
+export class GiftCurrencyMismatchException extends DomainException {
+  constructor() {
+    super("Gift currency must match the wish currency.");
+  }
+}
+
+export class GiftTargetAmountExceededException extends DomainException {
+  constructor() {
+    super("Gift amount would exceed the remaining wish target.");
+  }
+}
+
+export class WishCurrencyRequiredException extends DomainException {
+  constructor() {
+    super("A wish must have a currency before it can receive a targeted gift.");
   }
 }

@@ -1,0 +1,26 @@
+import { Gift } from "@domain/entities/gift.entity";
+import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
+import { PageQuery, PageResult } from "@shared/pagination/page-query";
+
+export abstract class GiftRepository {
+  abstract create(gift: Gift): Promise<Gift>;
+
+  abstract findById(id: string): Promise<Gift | null>;
+
+  abstract findPageByWishId(
+    wishId: string,
+    params: PageQuery<"createdAt" | "amount">,
+  ): Promise<PageResult<Gift>>;
+
+  abstract findPageByUserId(
+    userId: string,
+    params: PageQuery<"createdAt" | "amount">,
+  ): Promise<PageResult<Gift>>;
+
+  abstract sumAmountByWishIdAndCurrency(
+    wishId: string,
+    currency: PaymentCurrency,
+  ): Promise<string>;
+
+  abstract existsByWishId(wishId: string): Promise<boolean>;
+}

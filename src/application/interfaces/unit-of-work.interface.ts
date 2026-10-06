@@ -8,6 +8,9 @@ import { TicketRepository } from "@domain/repositories/ticket.repository";
 import { TicketMessageRepository } from "@domain/repositories/ticket-message.repository";
 import { TicketCategoryRepository } from "@domain/repositories/ticket-category.repository";
 import { NotificationRepository } from "@domain/repositories/notification.repository";
+import { ListRepository } from "@domain/repositories/list.repository";
+import { WishRepository } from "@domain/repositories/wish.repository";
+import { GiftRepository } from "@domain/repositories/gift.repository";
 
 export interface UnitOfWorkRepositories {
   userRepository: UserRepository;
@@ -20,6 +23,9 @@ export interface UnitOfWorkRepositories {
   ticketMessageRepository: TicketMessageRepository;
   ticketCategoryRepository: TicketCategoryRepository;
   notificationRepository: NotificationRepository;
+  listRepository: ListRepository;
+  wishRepository: WishRepository;
+  giftRepository: GiftRepository;
 }
 
 export abstract class UnitOfWork {

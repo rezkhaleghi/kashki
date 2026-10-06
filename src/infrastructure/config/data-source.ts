@@ -14,6 +14,7 @@ import { TicketCategoryOrmEntity } from "../database/orm-entities/ticket-categor
 import { NotificationOrmEntity } from "@infrastructure/database/orm-entities/notification.orm-entity";
 import { ListOrmEntity } from "@infrastructure/database/orm-entities/list.orm-entity";
 import { WishOrmEntity } from "@infrastructure/database/orm-entities/wish.orm-entity";
+import { GiftOrmEntity } from "@infrastructure/database/orm-entities/gift.orm-entity";
 
 /**
  * TypeORM CLI data source configuration.
@@ -44,6 +45,7 @@ export default new DataSource({
     NotificationOrmEntity,
     ListOrmEntity,
     WishOrmEntity,
+    GiftOrmEntity,
   ],
   migrations: [__dirname + "/../database/migrations/*.{js,ts}"],
   synchronize: true, // Set to false in production to avoid data loss

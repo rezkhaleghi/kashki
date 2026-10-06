@@ -88,6 +88,9 @@ describe("CreateGiftUseCase", () => {
       ledgerRepository: {
         create: jest.fn(),
       },
+      notificationRepository: {
+        create: jest.fn(),
+      },
     };
 
     unitOfWork = {
@@ -128,6 +131,10 @@ describe("CreateGiftUseCase", () => {
 
     repositories.ledgerRepository.create.mockImplementation(
       async (value: Ledger) => value,
+    );
+
+    repositories.notificationRepository.create.mockImplementation(
+      async (value: unknown) => value,
     );
 
     repositories.wishRepository.save.mockImplementation(
@@ -189,6 +196,8 @@ describe("CreateGiftUseCase", () => {
     expect(repositories.giftRepository.create).toHaveBeenCalledWith(result);
 
     expect(repositories.ledgerRepository.create).toHaveBeenCalledTimes(2);
+
+    expect(repositories.notificationRepository.create).toHaveBeenCalledTimes(1);
 
     const ledgerEntries: Ledger[] =
       repositories.ledgerRepository.create.mock.calls.map(
@@ -266,6 +275,7 @@ describe("CreateGiftUseCase", () => {
     expect(repositories.userBalanceRepository.save).toHaveBeenCalledTimes(2);
 
     expect(repositories.ledgerRepository.create).toHaveBeenCalledTimes(2);
+    expect(repositories.notificationRepository.create).toHaveBeenCalledTimes(1);
 
     const ledgerEntries: Ledger[] =
       repositories.ledgerRepository.create.mock.calls.map(
@@ -491,6 +501,7 @@ describe("CreateGiftUseCase", () => {
 
     expect(wish.getStatus()).toBe(WishStatus.COMPLETED);
     expect(repositories.wishRepository.save).toHaveBeenCalledWith(wish);
+    expect(repositories.notificationRepository.create).toHaveBeenCalledTimes(1);
   });
 
   it("keeps the wish active when the target has not been reached", async () => {
@@ -507,6 +518,7 @@ describe("CreateGiftUseCase", () => {
 
     expect(wish.getStatus()).toBe(WishStatus.ACTIVE);
     expect(repositories.wishRepository.save).not.toHaveBeenCalled();
+    expect(repositories.notificationRepository.create).toHaveBeenCalledTimes(1);
   });
 
   it("does not mark a targetless wish completed", async () => {
@@ -532,6 +544,7 @@ describe("CreateGiftUseCase", () => {
 
     expect(targetlessWish.getStatus()).toBe(WishStatus.ACTIVE);
     expect(repositories.wishRepository.save).not.toHaveBeenCalled();
+    expect(repositories.notificationRepository.create).toHaveBeenCalledTimes(1);
   });
 
   it("does not debit or create a gift when the giver balance does not exist", async () => {
@@ -556,6 +569,7 @@ describe("CreateGiftUseCase", () => {
 
     expect(repositories.giftRepository.create).not.toHaveBeenCalled();
     expect(repositories.ledgerRepository.create).not.toHaveBeenCalled();
+    expect(repositories.notificationRepository.create).not.toHaveBeenCalled();
   });
 
   it("does not create a gift when the wish owner's balance does not exist", async () => {
@@ -581,5 +595,6 @@ describe("CreateGiftUseCase", () => {
     expect(balance.amount).toBe("1000");
     expect(repositories.giftRepository.create).not.toHaveBeenCalled();
     expect(repositories.ledgerRepository.create).not.toHaveBeenCalled();
+    expect(repositories.notificationRepository.create).not.toHaveBeenCalled();
   });
 });

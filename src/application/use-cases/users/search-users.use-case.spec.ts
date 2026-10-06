@@ -1,6 +1,7 @@
-import { SearchUsersUseCase } from "./search-users.use-case";
-import { UserRepository } from "@domain/repositories/user.repository";
 import { UserSearchResult } from "@domain/repositories/user-search-result";
+import { UserRepository } from "@domain/repositories/user.repository";
+
+import { SearchUsersUseCase } from "./search-users.use-case";
 
 describe("SearchUsersUseCase", () => {
   let useCase: SearchUsersUseCase;
@@ -39,7 +40,6 @@ describe("SearchUsersUseCase", () => {
         avatar: null,
         bio: null,
         email: "user@example.com",
-        dateOfBirth: null,
         createdAt: new Date(),
       },
     ];

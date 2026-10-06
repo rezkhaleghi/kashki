@@ -39,7 +39,7 @@ describe("CreateWishUseCase", () => {
     useCase = new CreateWishUseCase(wishRepository, listRepository);
   });
 
-  it("should create a wish in an owned list", async () => {
+  it("should create a wish in an owned list with product links", async () => {
     const list = List.create({
       id: "list-1",
       userId: "user-1",
@@ -47,10 +47,16 @@ describe("CreateWishUseCase", () => {
       visibility: ListVisibility.PUBLIC,
     });
 
+    const links = [
+      "https://www.amazon.com/dp/example",
+      "https://www.digikala.com/product/example",
+    ];
+
     const wish = Wish.create({
       id: "wish-1",
       listId: "list-1",
       title: "MacBook Pro",
+      links,
       targetAmount: "1500",
       currency: PaymentCurrency.USD,
     });
@@ -62,6 +68,7 @@ describe("CreateWishUseCase", () => {
       userId: "user-1",
       listId: "list-1",
       title: "MacBook Pro",
+      links,
       targetAmount: "1500",
       currency: PaymentCurrency.USD,
     });
@@ -75,13 +82,14 @@ describe("CreateWishUseCase", () => {
       expect.objectContaining({
         listId: "list-1",
         title: "MacBook Pro",
+        links,
         targetAmount: "1500",
         currency: PaymentCurrency.USD,
       }),
     );
   });
 
-  it("should allow a targetless wish", async () => {
+  it("should create a wish without links", async () => {
     const list = List.create({
       id: "list-1",
       userId: "user-1",
@@ -103,7 +111,46 @@ describe("CreateWishUseCase", () => {
     });
 
     expect(result).toBe(wish);
-    expect(wishRepository.create).toHaveBeenCalled();
+    expect(result.links).toEqual([]);
+    expect(wishRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        links: [],
+      }),
+    );
+  });
+
+  it("should allow a targetless wish with links", async () => {
+    const list = List.create({
+      id: "list-1",
+      userId: "user-1",
+      name: "Birthday",
+    });
+
+    const links = ["https://example.com/product"];
+
+    const wish = Wish.create({
+      listId: "list-1",
+      title: "Surprise me",
+      links,
+    });
+
+    listRepository.findByUserIdAndId.mockResolvedValue(list);
+    wishRepository.create.mockResolvedValue(wish);
+
+    const result = await useCase.execute({
+      userId: "user-1",
+      listId: "list-1",
+      title: "Surprise me",
+      links,
+    });
+
+    expect(result).toBe(wish);
+    expect(result.links).toEqual(links);
+    expect(wishRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        links,
+      }),
+    );
   });
 
   it("should reject creating a wish in a list the user does not own", async () => {
@@ -114,6 +161,7 @@ describe("CreateWishUseCase", () => {
         userId: "user-1",
         listId: "list-1",
         title: "MacBook Pro",
+        links: ["https://example.com/product"],
       }),
     ).rejects.toBeInstanceOf(ListNotFoundException);
 

@@ -34,4 +34,10 @@ export abstract class GiftRepository {
   ): Promise<string>;
 
   abstract existsByWishId(wishId: string): Promise<boolean>;
+
+  /**
+   * Used by List deletion to determine whether any Wish under the List
+   * already has a Gift without loading all Wishes or Gifts.
+   */
+  abstract existsByListId(listId: string): Promise<boolean>;
 }

@@ -17,6 +17,7 @@ describe("GetListUseCase", () => {
       create: jest.fn(),
       save: jest.fn(),
       findById: jest.fn(),
+      findByIdForUpdate: jest.fn(),
       findByUserIdAndId: jest.fn(),
       findPageByUserId: jest.fn(),
       deleteById: jest.fn(),
@@ -36,11 +37,7 @@ describe("GetListUseCase", () => {
 
     listRepository.findById.mockResolvedValue(list);
 
-    const result = await useCase.execute({
-      listId: "list-1",
-    });
-
-    expect(result).toBe(list);
+    await expect(useCase.execute({ listId: "list-1" })).resolves.toBe(list);
   });
 
   it("returns the list when it exists and is unlisted", async () => {
@@ -53,11 +50,7 @@ describe("GetListUseCase", () => {
 
     listRepository.findById.mockResolvedValue(list);
 
-    const result = await useCase.execute({
-      listId: "list-1",
-    });
-
-    expect(result).toBe(list);
+    await expect(useCase.execute({ listId: "list-1" })).resolves.toBe(list);
   });
 
   it("returns a private list to its owner", async () => {
@@ -70,12 +63,12 @@ describe("GetListUseCase", () => {
 
     listRepository.findById.mockResolvedValue(list);
 
-    const result = await useCase.execute({
-      listId: "list-1",
-      requesterUserId: "user-1",
-    });
-
-    expect(result).toBe(list);
+    await expect(
+      useCase.execute({
+        listId: "list-1",
+        requesterUserId: "user-1",
+      }),
+    ).resolves.toBe(list);
   });
 
   it("rejects access to a private list for another user", async () => {
@@ -106,20 +99,16 @@ describe("GetListUseCase", () => {
 
     listRepository.findById.mockResolvedValue(list);
 
-    await expect(
-      useCase.execute({
-        listId: "list-1",
-      }),
-    ).rejects.toBeInstanceOf(ListAccessNotAllowedException);
+    await expect(useCase.execute({ listId: "list-1" })).rejects.toBeInstanceOf(
+      ListAccessNotAllowedException,
+    );
   });
 
   it("throws when the list does not exist", async () => {
     listRepository.findById.mockResolvedValue(null);
 
     await expect(
-      useCase.execute({
-        listId: "missing-list",
-      }),
+      useCase.execute({ listId: "missing-list" }),
     ).rejects.toBeInstanceOf(ListNotFoundException);
   });
 });

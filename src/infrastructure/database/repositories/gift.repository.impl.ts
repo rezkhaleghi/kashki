@@ -3,11 +3,11 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
 import { Gift } from "@domain/entities/gift.entity";
-import {
-  GiftRepository,
-  GiftFilters,
-} from "@domain/repositories/gift.repository";
 import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
+import {
+  GiftFilters,
+  GiftRepository,
+} from "@domain/repositories/gift.repository";
 import { PageQuery, PageResult } from "@shared/pagination/page-query";
 
 import { GiftOrmEntity } from "../orm-entities/gift.orm-entity";
@@ -94,6 +94,15 @@ export class GiftRepositoryImpl implements GiftRepository {
     return this.repo.exists({
       where: { wishId },
     });
+  }
+
+  async existsByListId(listId: string): Promise<boolean> {
+    return this.repo
+      .createQueryBuilder("gift")
+      .innerJoin("wishes", "wish", "wish.id = gift.wishId")
+      .where("wish.listId = :listId", { listId })
+      .limit(1)
+      .getExists();
   }
 
   async sumAmountByWishIdAndCurrency(

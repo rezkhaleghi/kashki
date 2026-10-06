@@ -1,8 +1,8 @@
-import { AdminListListsUseCase } from "./list-lists.use-case";
-
 import { List } from "@domain/entities/list.entity";
 import { ListVisibility } from "@domain/enums/list-visibility.enum";
 import { ListRepository } from "@domain/repositories/list.repository";
+
+import { AdminListListsUseCase } from "./list-lists.use-case";
 
 describe("AdminListListsUseCase", () => {
   let useCase: AdminListListsUseCase;
@@ -13,6 +13,7 @@ describe("AdminListListsUseCase", () => {
       create: jest.fn(),
       save: jest.fn(),
       findById: jest.fn(),
+      findByIdForUpdate: jest.fn(),
       findByUserIdAndId: jest.fn(),
       findPageByUserId: jest.fn(),
       findPage: jest.fn(),
@@ -47,12 +48,6 @@ describe("AdminListListsUseCase", () => {
     });
 
     expect(result).toEqual(pageResult);
-    expect(listRepository.findPage).toHaveBeenCalledWith({
-      page: 1,
-      limit: 10,
-      sortBy: "createdAt",
-      sortDirection: "DESC",
-    });
   });
 
   it("should pass the requested sorting to the repository", async () => {

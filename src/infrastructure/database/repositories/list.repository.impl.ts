@@ -43,6 +43,22 @@ export class ListRepositoryImpl implements ListRepository {
     return row ? this.toDomain(row) : null;
   }
 
+  /**
+   * Locks the List row for the current transaction.
+   *
+   * List deletion and targeted Gift creation use this lock as their
+   * synchronization point so they cannot race around the List's
+   * Wishes/Gifts.
+   */
+  async findByIdForUpdate(id: string): Promise<List | null> {
+    const row = await this.repo.findOne({
+      where: { id },
+      lock: { mode: "pessimistic_write" },
+    });
+
+    return row ? this.toDomain(row) : null;
+  }
+
   async findByUserIdAndId(userId: string, id: string): Promise<List | null> {
     const row = await this.repo.findOne({
       where: {

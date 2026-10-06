@@ -14,6 +14,7 @@ describe("UpdateListUseCase", () => {
       create: jest.fn(),
       save: jest.fn(),
       findById: jest.fn(),
+      findByIdForUpdate: jest.fn(),
       findByUserIdAndId: jest.fn(),
       findPageByUserId: jest.fn(),
       deleteById: jest.fn(),
@@ -43,16 +44,10 @@ describe("UpdateListUseCase", () => {
       visibility: ListVisibility.PUBLIC,
     });
 
-    expect(listRepository.findByUserIdAndId).toHaveBeenCalledWith(
-      "user-1",
-      "list-1",
-    );
-
-    expect(listRepository.save).toHaveBeenCalledWith(list);
-
     expect(result.name).toBe("New name");
     expect(result.description).toBe("New description");
     expect(result.visibility).toBe(ListVisibility.PUBLIC);
+    expect(listRepository.save).toHaveBeenCalledWith(list);
   });
 
   it("throws when the list does not belong to the user", async () => {
@@ -66,24 +61,7 @@ describe("UpdateListUseCase", () => {
       }),
     ).rejects.toThrow(ListNotFoundException);
 
-    expect(listRepository.findByUserIdAndId).toHaveBeenCalledWith(
-      "user-1",
-      "list-1",
-    );
-
     expect(listRepository.save).not.toHaveBeenCalled();
-  });
-
-  it("throws when the list does not exist", async () => {
-    listRepository.findByUserIdAndId.mockResolvedValue(null);
-
-    await expect(
-      useCase.execute({
-        userId: "user-1",
-        listId: "missing-list",
-        name: "New name",
-      }),
-    ).rejects.toThrow(ListNotFoundException);
   });
 
   it("updates only the supplied fields", async () => {

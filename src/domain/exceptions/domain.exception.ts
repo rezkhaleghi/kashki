@@ -266,6 +266,13 @@ export class ListAccessNotAllowedException extends DomainException {
     super("You cannot access this list.");
   }
 }
+export class ListCannotBeDeletedException extends DomainException {
+  constructor() {
+    super(
+      "List cannot be deleted because one or more wishes already have gifts.",
+    );
+  }
+}
 
 // Wish
 

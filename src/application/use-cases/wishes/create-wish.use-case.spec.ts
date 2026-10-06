@@ -32,6 +32,7 @@ describe("CreateWishUseCase", () => {
       findByUserIdAndId: jest.fn(),
       findPageByUserId: jest.fn(),
       findPage: jest.fn(),
+      findByIdForUpdate: jest.fn(),
       deleteById: jest.fn(),
     };
 

@@ -36,6 +36,7 @@ describe("GetWishUseCase", () => {
       findPageByUserId: jest.fn(),
       findPage: jest.fn(),
       deleteById: jest.fn(),
+      findByIdForUpdate: jest.fn(),
     };
 
     useCase = new GetWishUseCase(wishRepository, listRepository);

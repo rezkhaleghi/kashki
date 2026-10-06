@@ -14,6 +14,14 @@ export abstract class ListRepository {
 
   abstract findById(id: string): Promise<List | null>;
 
+  /**
+   * Locks the List row for the current transaction.
+   *
+   * List deletion and Gift creation both coordinate through this lock so
+   * a Gift cannot be created concurrently with deletion of its parent List.
+   */
+  abstract findByIdForUpdate(id: string): Promise<List | null>;
+
   abstract findByUserIdAndId(userId: string, id: string): Promise<List | null>;
 
   abstract findPageByUserId(

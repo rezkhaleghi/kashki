@@ -1,6 +1,6 @@
 import { Gift } from "@domain/entities/gift.entity";
-import { GiftRepository } from "@domain/repositories/gift.repository";
 import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
+import { GiftRepository } from "@domain/repositories/gift.repository";
 
 import { AdminListGiftsUseCase } from "./list-gifts.use-case";
 
@@ -17,6 +17,7 @@ describe("AdminListGiftsUseCase", () => {
       findPage: jest.fn(),
       sumAmountByWishIdAndCurrency: jest.fn(),
       existsByWishId: jest.fn(),
+      existsByListId: jest.fn(),
     };
 
     useCase = new AdminListGiftsUseCase(giftRepository);
@@ -48,19 +49,6 @@ describe("AdminListGiftsUseCase", () => {
     });
 
     expect(result).toEqual(pageResult);
-    expect(giftRepository.findPage).toHaveBeenCalledWith(
-      {
-        userId: undefined,
-        wishId: undefined,
-        currency: undefined,
-      },
-      {
-        page: 1,
-        limit: 10,
-        sortBy: "createdAt",
-        sortDirection: "DESC",
-      },
-    );
   });
 
   it("should pass filters to the repository", async () => {

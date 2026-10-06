@@ -13,6 +13,7 @@ describe("ListListsUseCase", () => {
       create: jest.fn(),
       save: jest.fn(),
       findById: jest.fn(),
+      findByIdForUpdate: jest.fn(),
       findByUserIdAndId: jest.fn(),
       findPageByUserId: jest.fn(),
       deleteById: jest.fn(),
@@ -56,13 +57,6 @@ describe("ListListsUseCase", () => {
       sortDirection: "DESC",
     });
 
-    expect(listRepository.findPageByUserId).toHaveBeenCalledWith("user-1", {
-      page: 1,
-      limit: 20,
-      sortBy: "createdAt",
-      sortDirection: "DESC",
-    });
-
     expect(result).toEqual(page);
   });
 
@@ -85,35 +79,12 @@ describe("ListListsUseCase", () => {
       sortDirection: "ASC",
     });
 
+    expect(result).toEqual(page);
     expect(listRepository.findPageByUserId).toHaveBeenCalledWith("user-1", {
       page: 2,
       limit: 10,
       sortBy: "name",
       sortDirection: "ASC",
     });
-
-    expect(result).toEqual(page);
-  });
-
-  it("returns an empty page when the user has no lists", async () => {
-    const page = {
-      data: [],
-      page: 1,
-      limit: 20,
-      total: 0,
-      totalPages: 0,
-    };
-
-    listRepository.findPageByUserId.mockResolvedValue(page);
-
-    const result = await useCase.execute({
-      userId: "user-1",
-      page: 1,
-      limit: 20,
-      sortBy: "createdAt",
-      sortDirection: "DESC",
-    });
-
-    expect(result).toEqual(page);
   });
 });

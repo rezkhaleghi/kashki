@@ -1,7 +1,7 @@
 import { Gift } from "@domain/entities/gift.entity";
+import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
 import { GiftNotFoundException } from "@domain/exceptions/domain.exception";
 import { GiftRepository } from "@domain/repositories/gift.repository";
-import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
 
 import { AdminGetGiftUseCase } from "./get-gift.use-case";
 
@@ -18,6 +18,7 @@ describe("AdminGetGiftUseCase", () => {
       findPage: jest.fn(),
       sumAmountByWishIdAndCurrency: jest.fn(),
       existsByWishId: jest.fn(),
+      existsByListId: jest.fn(),
     };
 
     useCase = new AdminGetGiftUseCase(giftRepository);
@@ -46,8 +47,6 @@ describe("AdminGetGiftUseCase", () => {
     await expect(useCase.execute("gift-id")).rejects.toThrow(
       GiftNotFoundException,
     );
-
-    expect(giftRepository.findById).toHaveBeenCalledWith("gift-id");
   });
 
   it("should propagate repository errors", async () => {

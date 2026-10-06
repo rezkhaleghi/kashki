@@ -2,10 +2,10 @@ import { Module } from "@nestjs/common";
 
 import { ApplicationModule } from "@application/application.module";
 
-import { FilesController } from "./files.controller";
+import { NotificationsController } from "./notifications.controller";
 
 @Module({
   imports: [ApplicationModule],
-  controllers: [FilesController],
+  controllers: [NotificationsController],
 })
-export class FilesModule {}
+export class NotificationsModule {}

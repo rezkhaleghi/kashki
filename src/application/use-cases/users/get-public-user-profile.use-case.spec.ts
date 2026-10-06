@@ -34,7 +34,7 @@ describe("GetPublicUserProfileUseCase", () => {
      * harder to maintain whenever an unrelated repository method changes.
      */
     userRepository = {
-      findById: jest.fn(),
+      findByUserName: jest.fn(),
     } as unknown as jest.Mocked<UserRepository>;
 
     listRepository = {
@@ -103,7 +103,7 @@ describe("GetPublicUserProfileUseCase", () => {
         currency: PaymentCurrency.USD,
       });
 
-      userRepository.findById.mockResolvedValue(user);
+      userRepository.findByUserName.mockResolvedValue(user);
 
       listRepository.findPageByUserId.mockResolvedValue({
         data: [publicList, privateList],
@@ -123,7 +123,7 @@ describe("GetPublicUserProfileUseCase", () => {
 
       giftRepository.sumAmountByWishIdAndCurrency.mockResolvedValue("700");
 
-      const result = await useCase.execute(user.id);
+      const result = await useCase.execute("Bob");
 
       expect(result).toEqual({
         id: user.id,
@@ -153,6 +153,8 @@ describe("GetPublicUserProfileUseCase", () => {
           },
         ],
       });
+
+      expect(userRepository.findByUserName).toHaveBeenCalledWith("bob");
 
       expect(listRepository.findPageByUserId).toHaveBeenCalledWith(user.id, {
         page: 1,
@@ -218,7 +220,7 @@ describe("GetPublicUserProfileUseCase", () => {
         visibility: ListVisibility.UNLISTED,
       });
 
-      userRepository.findById.mockResolvedValue(user);
+      userRepository.findByUserName.mockResolvedValue(user);
 
       listRepository.findPageByUserId.mockResolvedValue({
         data: [publicList, privateList, unlistedList],
@@ -236,7 +238,7 @@ describe("GetPublicUserProfileUseCase", () => {
         totalPages: 0,
       });
 
-      const result = await useCase.execute(user.id);
+      const result = await useCase.execute("bob");
 
       expect(result.lists).toHaveLength(1);
       expect(result.lists[0].id).toBe(publicList.id);
@@ -273,7 +275,7 @@ describe("GetPublicUserProfileUseCase", () => {
         status: UserStatus.ACTIVE,
       });
 
-      userRepository.findById.mockResolvedValue(user);
+      userRepository.findByUserName.mockResolvedValue(user);
 
       listRepository.findPageByUserId.mockResolvedValue({
         data: [],
@@ -283,7 +285,7 @@ describe("GetPublicUserProfileUseCase", () => {
         totalPages: 0,
       });
 
-      const result = await useCase.execute(user.id);
+      const result = await useCase.execute("bob");
 
       expect(result.birthday).toBe("07-25");
       expect(result).not.toHaveProperty("dateOfBirth");
@@ -309,7 +311,7 @@ describe("GetPublicUserProfileUseCase", () => {
         status: UserStatus.ACTIVE,
       });
 
-      userRepository.findById.mockResolvedValue(user);
+      userRepository.findByUserName.mockResolvedValue(user);
 
       listRepository.findPageByUserId.mockResolvedValue({
         data: [],
@@ -319,7 +321,7 @@ describe("GetPublicUserProfileUseCase", () => {
         totalPages: 0,
       });
 
-      const result = await useCase.execute(user.id);
+      const result = await useCase.execute("bob");
 
       expect(result.birthday).toBe("2000-07-25");
     });
@@ -344,7 +346,7 @@ describe("GetPublicUserProfileUseCase", () => {
         status: UserStatus.ACTIVE,
       });
 
-      userRepository.findById.mockResolvedValue(user);
+      userRepository.findByUserName.mockResolvedValue(user);
 
       listRepository.findPageByUserId.mockResolvedValue({
         data: [],
@@ -354,7 +356,7 @@ describe("GetPublicUserProfileUseCase", () => {
         totalPages: 0,
       });
 
-      const result = await useCase.execute(user.id);
+      const result = await useCase.execute("bob");
 
       expect(result.birthday).toBeNull();
     });
@@ -379,9 +381,9 @@ describe("GetPublicUserProfileUseCase", () => {
         status: UserStatus.RESTRICTED,
       });
 
-      userRepository.findById.mockResolvedValue(user);
+      userRepository.findByUserName.mockResolvedValue(user);
 
-      await expect(useCase.execute(user.id)).rejects.toThrow(
+      await expect(useCase.execute("bob")).rejects.toThrow(
         UserNotFoundException,
       );
 
@@ -389,7 +391,7 @@ describe("GetPublicUserProfileUseCase", () => {
     });
 
     it("should reject a non-existent user", async () => {
-      userRepository.findById.mockResolvedValue(null);
+      userRepository.findByUserName.mockResolvedValue(null);
 
       await expect(
         useCase.execute("00000000-0000-0000-0000-000000000000"),
@@ -435,7 +437,7 @@ describe("GetPublicUserProfileUseCase", () => {
         currency: null,
       });
 
-      userRepository.findById.mockResolvedValue(user);
+      userRepository.findByUserName.mockResolvedValue(user);
 
       listRepository.findPageByUserId.mockResolvedValue({
         data: [publicList],
@@ -453,7 +455,7 @@ describe("GetPublicUserProfileUseCase", () => {
         totalPages: 1,
       });
 
-      const result = await useCase.execute(user.id);
+      const result = await useCase.execute("bob");
 
       expect(result.lists).toHaveLength(1);
       expect(result.lists[0].wishes).toHaveLength(1);
@@ -512,7 +514,7 @@ describe("GetPublicUserProfileUseCase", () => {
         title: "Second wish",
       });
 
-      userRepository.findById.mockResolvedValue(user);
+      userRepository.findByUserName.mockResolvedValue(user);
 
       listRepository.findPageByUserId.mockResolvedValue({
         data: [publicList],
@@ -538,7 +540,7 @@ describe("GetPublicUserProfileUseCase", () => {
           totalPages: 2,
         });
 
-      const result = await useCase.execute(user.id);
+      const result = await useCase.execute("bob");
 
       expect(result.lists[0].wishes).toHaveLength(2);
       expect(result.lists[0].wishes[0].id).toBe(firstWish.id);
@@ -601,7 +603,7 @@ describe("GetPublicUserProfileUseCase", () => {
         visibility: ListVisibility.PUBLIC,
       });
 
-      userRepository.findById.mockResolvedValue(user);
+      userRepository.findByUserName.mockResolvedValue(user);
 
       listRepository.findPageByUserId
         .mockResolvedValueOnce({
@@ -627,7 +629,7 @@ describe("GetPublicUserProfileUseCase", () => {
         totalPages: 0,
       });
 
-      const result = await useCase.execute(user.id);
+      const result = await useCase.execute("bob");
 
       expect(result.lists).toHaveLength(2);
 

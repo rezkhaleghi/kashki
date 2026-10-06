@@ -106,7 +106,7 @@ describe("CreateUserUseCase", () => {
     );
   });
 
-  it("rejects an existing email without creating a balance or list", async () => {
+  it("rejects an existing email without hashing, creating a balance, or creating a list", async () => {
     const existingUser = User.create({
       id: "id",
       email: "user@example.com",
@@ -134,14 +134,14 @@ describe("CreateUserUseCase", () => {
     ).rejects.toBeInstanceOf(UserAlreadyExistsException);
 
     expect(findByEmail).toHaveBeenCalledWith("user@example.com");
-    expect(hash).toHaveBeenCalledWith("password");
+    expect(hash).not.toHaveBeenCalled();
     expect(findByUserName).not.toHaveBeenCalled();
     expect(save).not.toHaveBeenCalled();
     expect(createBalance).not.toHaveBeenCalled();
     expect(createList).not.toHaveBeenCalled();
   });
 
-  it("rejects an existing username without creating a user, balance, or list", async () => {
+  it("rejects an existing username without hashing, creating a user, balance, or list", async () => {
     findByEmail.mockResolvedValue(null);
 
     const existingUser = User.create({

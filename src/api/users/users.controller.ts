@@ -1,31 +1,15 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Patch,
   Query,
   Req,
   UseGuards,
-  UploadedFile,
-  UseInterceptors,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
-  Post,
   Param,
 } from "@nestjs/common";
 
-import { FileInterceptor } from "@nestjs/platform-express";
-
-import {
-  ApiBody,
-  ApiConsumes,
-  ApiOperation,
-  ApiParam,
-  ApiResponse,
-  ApiTags,
-} from "@nestjs/swagger";
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 
 import type { Request } from "express";
 
@@ -35,20 +19,14 @@ import { AuthSessionGuard } from "../auth/auth-session.guard";
 
 import { GetCurrentUserUseCase } from "@application/use-cases/users/get-current-user.use-case";
 import { UpdateCurrentUserUseCase } from "@application/use-cases/users/update-current-user.use-case";
-import { UpdateUserAvatarUseCase } from "@application/use-cases/users/update-user-avatar.use-case";
-import { DeleteUserAvatarUseCase } from "@application/use-cases/users/delete-user-avatar.use-case";
 import { SearchUsersUseCase } from "@application/use-cases/users/search-users.use-case";
 import { GetUserBalancesUseCase } from "@application/use-cases/users/get-user-balances.use-case";
-import { ListNotificationsUseCase } from "@application/use-cases/notifications/list-notifications.use-case";
-import { ReadNotificationUseCase } from "@application/use-cases/notifications/read-notification.use-case";
 import { GetPublicUserProfileUseCase } from "@application/use-cases/users/get-public-user-profile.use-case";
 
 import { UpdateProfileDto } from "./dtos/update-profile.dto";
 import { AuthenticatedUserResponseDto } from "../auth/dtos/authenticated-user.response.dto";
 import { ListUserBalancesQueryDto } from "./dtos/list-user-balances.query.dto";
 import { SearchUsersQueryDto } from "./dtos/search-users.query.dto";
-import { ListNotificationsQueryDto } from "./dtos/list-notifications.query.dto";
-import { NotificationResponseDto } from "./dtos/notification.response.dto";
 import { PublicUserProfileResponseDto } from "./dtos/public-user-profile.response.dto";
 
 @ApiTags("users")
@@ -58,11 +36,7 @@ export class UsersController {
     private readonly getCurrentUserUseCase: GetCurrentUserUseCase,
     private readonly getCurrentUserBalancesUseCase: GetUserBalancesUseCase,
     private readonly updateCurrentUserUseCase: UpdateCurrentUserUseCase,
-    private readonly updateUserAvatarUseCase: UpdateUserAvatarUseCase,
-    private readonly deleteUserAvatarUseCase: DeleteUserAvatarUseCase,
     private readonly searchUsersUseCase: SearchUsersUseCase,
-    private readonly listNotificationsUseCase: ListNotificationsUseCase,
-    private readonly readNotificationUseCase: ReadNotificationUseCase,
     private readonly getPublicUserProfileUseCase: GetPublicUserProfileUseCase,
   ) {}
 
@@ -146,82 +120,6 @@ export class UsersController {
     return this.toUserResponse(user);
   }
 
-  @Post("me/avatar")
-  @UseGuards(AuthSessionGuard)
-  @UseInterceptors(FileInterceptor("file"))
-  @ApiOperation({
-    summary: "Update the currently authenticated user's avatar",
-  })
-  @ApiConsumes("multipart/form-data")
-  @ApiBody({
-    schema: {
-      type: "object",
-      properties: {
-        file: {
-          type: "string",
-          format: "binary",
-        },
-      },
-      required: ["file"],
-    },
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Avatar updated",
-    type: AuthenticatedUserResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: "Invalid or unsupported image",
-  })
-  async updateAvatar(
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({
-            maxSize: 5 * 1024 * 1024,
-          }),
-          new FileTypeValidator({
-            fileType: /^image\/(jpeg|png|webp|gif)$/,
-          }),
-        ],
-      }),
-    )
-    file: {
-      buffer: Buffer;
-      mimetype: string;
-    },
-    @Req() req: Request,
-  ) {
-    const user = await this.updateUserAvatarUseCase.execute(
-      req.session.userId!,
-      {
-        buffer: file.buffer,
-        mimetype: file.mimetype,
-      },
-    );
-
-    return this.toUserResponse(user);
-  }
-
-  @Delete("me/avatar")
-  @UseGuards(AuthSessionGuard)
-  @ApiOperation({
-    summary: "Delete the currently authenticated user's avatar",
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Avatar deleted",
-    type: AuthenticatedUserResponseDto,
-  })
-  async deleteAvatar(@Req() req: Request) {
-    const user = await this.deleteUserAvatarUseCase.execute(
-      req.session.userId!,
-    );
-
-    return this.toUserResponse(user);
-  }
-
   @Get("search")
   @ApiOperation({
     summary: "Search users",
@@ -237,55 +135,6 @@ export class UsersController {
       page: query.page,
       limit: query.limit,
     });
-  }
-
-  @Get("me/notifications")
-  @UseGuards(AuthSessionGuard)
-  @ApiOperation({
-    summary: "List the current user's notifications",
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Current user's notifications",
-  })
-  @ApiResponse({
-    status: 401,
-    description: "Not authenticated",
-  })
-  async getMyNotifications(
-    @Query() query: ListNotificationsQueryDto,
-    @Req() req: Request,
-  ) {
-    return this.listNotificationsUseCase.execute({
-      userId: req.session.userId!,
-      page: query.page,
-      limit: query.limit,
-      sortDirection: query.sortDirection,
-      channel: query.channel,
-      type: query.type,
-    });
-  }
-
-  @Patch("me/notifications/:id/read")
-  @UseGuards(AuthSessionGuard)
-  @ApiOperation({
-    summary: "Mark one of the current user's in-app notifications as read",
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Notification marked as read",
-    type: NotificationResponseDto,
-  })
-  @ApiResponse({
-    status: 404,
-    description: "Notification not found",
-  })
-  @ApiResponse({
-    status: 400,
-    description: "Notification cannot be marked as read",
-  })
-  async markNotificationAsRead(@Param("id") id: string, @Req() req: Request) {
-    return this.readNotificationUseCase.execute(req.session.userId!, id);
   }
 
   @Get(":username")

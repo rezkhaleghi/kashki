@@ -37,8 +37,6 @@ export class CreateUserUseCase {
      */
     const userName = input.userName.trim().toLowerCase();
 
-    const hashedPassword = await this.passwordHasher.hash(input.password);
-
     return this.unitOfWork.execute(
       async ({ userRepository, userBalanceRepository, listRepository }) => {
         const existingEmail = await userRepository.findByEmail(email);
@@ -52,6 +50,13 @@ export class CreateUserUseCase {
         if (existingUsername) {
           throw new UsernameAlreadyExistsException(userName);
         }
+
+        /**
+         * Password hashing is intentionally performed only after the
+         * uniqueness checks. Hashing is deliberately expensive, so there is
+         * no reason to perform it when signup will be rejected anyway.
+         */
+        const hashedPassword = await this.passwordHasher.hash(input.password);
 
         const user = User.create({
           email,

@@ -345,7 +345,7 @@ describe("CreateGiftUseCase", () => {
     ).rejects.toThrow(GiftTargetAmountExceededException);
   });
 
-  it("marks the wish completed when the target is reached", async () => {
+  it("marks the wish completed when the target is reached exactly", async () => {
     repositories.giftRepository.sumAmountByWishIdAndCurrency
       .mockResolvedValueOnce("400")
       .mockResolvedValueOnce("500");
@@ -359,6 +359,22 @@ describe("CreateGiftUseCase", () => {
 
     expect(wish.getStatus()).toBe(WishStatus.COMPLETED);
     expect(repositories.wishRepository.save).toHaveBeenCalledWith(wish);
+  });
+
+  it("keeps the wish active when the target has not been reached", async () => {
+    repositories.giftRepository.sumAmountByWishIdAndCurrency
+      .mockResolvedValueOnce("100")
+      .mockResolvedValueOnce("200");
+
+    await useCase.execute({
+      userId,
+      wishId,
+      amount: "100",
+      currency: PaymentCurrency.USD,
+    });
+
+    expect(wish.getStatus()).toBe(WishStatus.ACTIVE);
+    expect(repositories.wishRepository.save).not.toHaveBeenCalled();
   });
 
   it("does not mark a targetless wish completed", async () => {

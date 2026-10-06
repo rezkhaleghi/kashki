@@ -22,6 +22,7 @@ import {
 import {
   addDecimal,
   isNegativeDecimal,
+  isZeroDecimal,
   subtractDecimal,
 } from "@domain/utils/decimal.util";
 
@@ -254,8 +255,15 @@ export class CreateGiftUseCase {
 
         /**
          * The Gift is already persisted inside the same transaction.
-         * Recalculate the received amount and complete the Wish when its
-         * target has been reached.
+         * Recalculate the received amount and complete the Wish only when
+         * the target has been reached exactly.
+         *
+         * The distinction matters:
+         *   target = 500, received = 400 -> ACTIVE
+         *   target = 500, received = 500 -> COMPLETED
+         *
+         * The overflow case was already rejected above, so equality is
+         * the correct completion condition.
          */
         if (wish && wish.targetAmount !== null) {
           const receivedAmount =
@@ -264,11 +272,12 @@ export class CreateGiftUseCase {
               input.currency,
             );
 
-          if (
-            !isNegativeDecimal(
-              subtractDecimal(wish.targetAmount, receivedAmount),
-            )
-          ) {
+          const remainingAmount = subtractDecimal(
+            wish.targetAmount,
+            receivedAmount,
+          );
+
+          if (isZeroDecimal(remainingAmount)) {
             wish.markCompleted();
             await wishRepository.save(wish);
           }

@@ -125,7 +125,7 @@ describe("AdminDeleteWishUseCase", () => {
         listId,
         wishId,
       }),
-    ).rejects.toBeInstanceOf(WishNotFoundException);
+    ).rejects.toBeInstanceOf(ListNotFoundException);
 
     expect(deleteById).not.toHaveBeenCalled();
   });

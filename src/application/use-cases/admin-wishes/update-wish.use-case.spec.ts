@@ -153,7 +153,7 @@ describe("AdminUpdateWishUseCase", () => {
         wishId,
         title: "Updated",
       }),
-    ).rejects.toBeInstanceOf(WishNotFoundException);
+    ).rejects.toBeInstanceOf(ListNotFoundException);
 
     expect(saveWish).not.toHaveBeenCalled();
   });

@@ -160,7 +160,7 @@ describe("UpdateWishUseCase", () => {
     expect(saveWish).not.toHaveBeenCalled();
   });
 
-  it("returns WishNotFoundException when the wish belongs to another list", async () => {
+  it("returns ListNotFoundException when the wish belongs to another list", async () => {
     const wish = Wish.create({
       id: wishId,
       listId: "another-list",
@@ -178,7 +178,7 @@ describe("UpdateWishUseCase", () => {
         wishId,
         title: "Updated",
       }),
-    ).rejects.toBeInstanceOf(WishNotFoundException);
+    ).rejects.toBeInstanceOf(ListNotFoundException);
 
     expect(saveWish).not.toHaveBeenCalled();
   });

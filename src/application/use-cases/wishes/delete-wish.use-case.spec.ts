@@ -136,7 +136,7 @@ describe("DeleteWishUseCase", () => {
     expect(deleteById).not.toHaveBeenCalled();
   });
 
-  it("returns WishNotFoundException when the wish belongs to another list", async () => {
+  it("returns ListNotFoundException when the wish belongs to another list", async () => {
     const wish = Wish.create({
       id: wishId,
       listId: "another-list",
@@ -151,7 +151,7 @@ describe("DeleteWishUseCase", () => {
         listId,
         wishId,
       }),
-    ).rejects.toBeInstanceOf(WishNotFoundException);
+    ).rejects.toBeInstanceOf(ListNotFoundException);
 
     expect(deleteById).not.toHaveBeenCalled();
   });

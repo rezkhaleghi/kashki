@@ -14,6 +14,8 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
+  HttpCode,
+  HttpStatus,
 } from "@nestjs/common";
 
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -35,7 +37,6 @@ import { UpdateUserAvatarUseCase } from "@application/use-cases/users/update-use
 import { DeleteUserAvatarUseCase } from "@application/use-cases/users/delete-user-avatar.use-case";
 
 import { AuthSessionGuard } from "../auth/auth-session.guard";
-import { AuthenticatedUserResponseDto } from "../auth/dtos/authenticated-user.response.dto";
 
 @ApiTags("files")
 @Controller("files")
@@ -49,6 +50,7 @@ export class FilesController {
   @Post("me/avatar")
   @UseGuards(AuthSessionGuard)
   @UseInterceptors(FileInterceptor("file"))
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: "Update the currently authenticated user's avatar",
   })
@@ -66,9 +68,8 @@ export class FilesController {
     },
   })
   @ApiResponse({
-    status: 200,
-    description: "Avatar updated",
-    type: AuthenticatedUserResponseDto,
+    status: 204,
+    description: "Avatar updated successfully",
   })
   @ApiResponse({
     status: 400,
@@ -96,38 +97,29 @@ export class FilesController {
       mimetype: string;
     },
     @Req() req: Request,
-  ) {
-    const user = await this.updateUserAvatarUseCase.execute(
-      req.session.userId!,
-      {
-        buffer: file.buffer,
-        mimetype: file.mimetype,
-      },
-    );
-
-    return this.toUserResponse(user);
+  ): Promise<void> {
+    await this.updateUserAvatarUseCase.execute(req.session.userId!, {
+      buffer: file.buffer,
+      mimetype: file.mimetype,
+    });
   }
 
   @Delete("me/avatar")
   @UseGuards(AuthSessionGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: "Delete the currently authenticated user's avatar",
   })
   @ApiResponse({
-    status: 200,
-    description: "Avatar deleted",
-    type: AuthenticatedUserResponseDto,
+    status: 204,
+    description: "Avatar deleted successfully",
   })
   @ApiResponse({
     status: 401,
     description: "Not authenticated",
   })
-  async deleteAvatar(@Req() req: Request) {
-    const user = await this.deleteUserAvatarUseCase.execute(
-      req.session.userId!,
-    );
-
-    return this.toUserResponse(user);
+  async deleteAvatar(@Req() req: Request): Promise<void> {
+    await this.deleteUserAvatarUseCase.execute(req.session.userId!);
   }
 
   @Get("*")
@@ -176,29 +168,5 @@ export class FilesController {
     response.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
 
     return new StreamableFile(file.stream);
-  }
-
-  private toUserResponse(user: {
-    id: string;
-    email: string;
-    emailVerified: boolean;
-    firstName: string | null;
-    lastName: string | null;
-    userName: string | null;
-    dateOfBirth: Date | null;
-    avatar: string | null;
-    bio: string | null;
-  }) {
-    return {
-      id: user.id,
-      email: user.email,
-      emailVerified: user.emailVerified,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      userName: user.userName,
-      dateOfBirth: user.dateOfBirth,
-      avatar: user.avatar,
-      bio: user.bio,
-    };
   }
 }

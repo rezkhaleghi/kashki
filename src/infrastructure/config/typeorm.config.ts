@@ -11,6 +11,7 @@ import { TicketMessageOrmEntity } from "../database/orm-entities/ticket-message.
 import { TicketCategoryOrmEntity } from "../database/orm-entities/ticket-category.orm-entity";
 import { NotificationOrmEntity } from "@infrastructure/database/orm-entities/notification.orm-entity";
 import { ListOrmEntity } from "@infrastructure/database/orm-entities/list.orm-entity";
+import { WishOrmEntity } from "@infrastructure/database/orm-entities/wish.orm-entity";
 
 /**
  * NestJS database configuration.
@@ -39,6 +40,7 @@ export default registerAs(
       TicketCategoryOrmEntity,
       NotificationOrmEntity,
       ListOrmEntity,
+      WishOrmEntity,
     ],
     synchronize: process.env.NODE_ENV === "development",
     // synchronize: true, // Set to false in production to avoid data loss

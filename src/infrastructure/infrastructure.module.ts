@@ -88,6 +88,9 @@ import { NotificationRepository } from "@domain/repositories/notification.reposi
 import { ListOrmEntity } from "./database/orm-entities/list.orm-entity";
 import { ListRepository } from "@domain/repositories/list.repository";
 import { ListRepositoryImpl } from "./database/repositories/list.repository.impl";
+import { WishOrmEntity } from "./database/orm-entities/wish.orm-entity";
+import { WishRepository } from "@domain/repositories/wish.repository";
+import { WishRepositoryImpl } from "./database/repositories/wish.repository.impl";
 /**
  * Infrastructure composition root.
  *
@@ -263,6 +266,7 @@ import { ListRepositoryImpl } from "./database/repositories/list.repository.impl
       TicketCategoryOrmEntity,
       NotificationOrmEntity,
       ListOrmEntity,
+      WishOrmEntity,
     ]),
   ],
 
@@ -430,6 +434,10 @@ import { ListRepositoryImpl } from "./database/repositories/list.repository.impl
       provide: ListRepository,
       useClass: ListRepositoryImpl,
     },
+    {
+      provide: WishRepository,
+      useClass: WishRepositoryImpl,
+    },
   ],
 
   exports: [
@@ -455,6 +463,7 @@ import { ListRepositoryImpl } from "./database/repositories/list.repository.impl
     SessionManager,
     NotificationRepository,
     ListRepository,
+    WishRepository,
   ],
 })
 export class InfrastructureModule {}

@@ -107,6 +107,7 @@ export class InsufficientBalanceException extends DomainException {
     super("Insufficient Balance!");
   }
 }
+
 export class InvalidLedgerEntryException extends DomainException {
   constructor() {
     super(
@@ -114,6 +115,7 @@ export class InvalidLedgerEntryException extends DomainException {
     );
   }
 }
+
 export class UnsupportedPaymentCurrencyException extends DomainException {
   constructor(currency: string) {
     super(`Currency ${currency} is not supported by the payment provider.`);
@@ -147,11 +149,13 @@ export class InvalidDepositAmountException extends DomainException {
     super("Deposit amount must be positive.");
   }
 }
+
 export class DepositNotFoundException extends DomainException {
   constructor() {
     super("Deposit not found.");
   }
 }
+
 export class DepositChangeStatusNotAllowedException extends DomainException {
   constructor(status: string) {
     super(`Deposit status change is not allowed from ${status}.`);
@@ -173,6 +177,7 @@ export class DepositIdempotencyConflictException extends DomainException {
 }
 
 //ticket
+
 export class TicketNotFoundException extends DomainException {
   constructor() {
     super("Ticket not found.");
@@ -190,6 +195,7 @@ export class TicketMustAssignToAdminException extends DomainException {
     super("Target user must be an admin/support user.");
   }
 }
+
 export class TicketClosedException extends DomainException {
   constructor() {
     super("This ticket is closed and cannot receive new replies.");
@@ -215,6 +221,7 @@ export class TicketCategoryAlreadyExistsException extends DomainException {
 }
 
 // Decimal utility exceptions
+
 export class InvalidDecimalValueException extends DomainException {
   constructor(value: string) {
     super(`Invalid decimal value: ${value}`);
@@ -230,6 +237,7 @@ export class DecimalScaleExceededException extends DomainException {
 }
 
 // Payment provider exceptions
+
 export class UnsupportedPaymentProviderException extends DomainException {
   constructor(provider: string) {
     super(`Payment provider ${provider} is not supported.`);
@@ -237,6 +245,7 @@ export class UnsupportedPaymentProviderException extends DomainException {
 }
 
 // Notification
+
 export class NotificationNotFoundException extends DomainException {
   constructor() {
     super("Notification not found.");
@@ -244,6 +253,7 @@ export class NotificationNotFoundException extends DomainException {
 }
 
 // List
+
 export class ListNotFoundException extends DomainException {
   constructor() {
     super("List not found.");
@@ -257,6 +267,7 @@ export class ListAccessNotAllowedException extends DomainException {
 }
 
 // Wish
+
 export class WishNotFoundException extends DomainException {
   constructor() {
     super("Wish not found.");
@@ -272,5 +283,19 @@ export class WishCompletedException extends DomainException {
 export class InvalidWishTargetAmountException extends DomainException {
   constructor() {
     super("Wish target amount must be positive.");
+  }
+}
+
+export class WishTargetAmountTooLowException extends DomainException {
+  constructor() {
+    super(
+      "Wish target amount cannot be lower than the amount already received.",
+    );
+  }
+}
+
+export class WishCurrencyChangeNotAllowedException extends DomainException {
+  constructor() {
+    super("Wish currency cannot be changed after receiving gifts.");
   }
 }

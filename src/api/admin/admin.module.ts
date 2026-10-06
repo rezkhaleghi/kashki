@@ -9,6 +9,7 @@ import { AdminWithdrawalsController } from "./admin-withdrawals.controller";
 import { AdminTicketsController } from "./admin-tickets.controller";
 import { AdminNotificationsController } from "./admin-notifications.controller";
 import { AdminListsController } from "./admin-lists.controller";
+import { AdminWishesController } from "./admin-wishes.controller";
 
 @Module({
   imports: [ApplicationModule],
@@ -22,6 +23,7 @@ import { AdminListsController } from "./admin-lists.controller";
     AdminTicketsController,
     AdminNotificationsController,
     AdminListsController,
+    AdminWishesController,
   ],
 
   providers: [AdminAuthGuard],

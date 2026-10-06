@@ -6,8 +6,14 @@ import {
   FieldMustExistException,
   InvalidWishTargetAmountException,
   WishCompletedException,
+  WishCurrencyChangeNotAllowedException,
+  WishTargetAmountTooLowException,
 } from "@domain/exceptions/domain.exception";
-import { isNegativeDecimal, isZeroDecimal } from "@domain/utils/decimal.util";
+import {
+  isNegativeDecimal,
+  isZeroDecimal,
+  subtractDecimal,
+} from "@domain/utils/decimal.util";
 
 export interface CreateWishProps {
   id?: string;
@@ -106,9 +112,35 @@ export class Wish {
     );
   }
 
-  update(params: UpdateWishParams): void {
+  update(params: UpdateWishParams, receivedAmount = "0"): void {
     if (this.status === WishStatus.COMPLETED) {
-      throw new WishCompletedException();
+      if (
+        params.targetAmount === undefined ||
+        params.targetAmount === null ||
+        this.targetAmount === null
+      ) {
+        throw new WishCompletedException();
+      }
+
+      const targetDelta = subtractDecimal(
+        params.targetAmount,
+        this.targetAmount,
+      );
+
+      const isIncreasingTarget =
+        !isNegativeDecimal(targetDelta) && !isZeroDecimal(targetDelta);
+
+      if (!isIncreasingTarget) {
+        throw new WishCompletedException();
+      }
+
+      this.validateTargetAmount(params.targetAmount, receivedAmount);
+
+      this.targetAmount = params.targetAmount;
+      this.status = WishStatus.ACTIVE;
+      this.updatedAt = new Date();
+
+      return;
     }
 
     if (params.title !== undefined) {
@@ -126,18 +158,17 @@ export class Wish {
     }
 
     if (params.targetAmount !== undefined) {
-      if (
-        params.targetAmount !== null &&
-        (isNegativeDecimal(params.targetAmount) ||
-          isZeroDecimal(params.targetAmount))
-      ) {
-        throw new InvalidWishTargetAmountException();
-      }
-
+      this.validateTargetAmount(params.targetAmount, receivedAmount);
       this.targetAmount = params.targetAmount;
     }
 
     if (params.currency !== undefined) {
+      const hasReceivedGifts = !isZeroDecimal(receivedAmount);
+
+      if (hasReceivedGifts && params.currency !== this.currency) {
+        throw new WishCurrencyChangeNotAllowedException();
+      }
+
       this.currency = params.currency;
     }
 
@@ -151,5 +182,24 @@ export class Wish {
 
     this.status = WishStatus.COMPLETED;
     this.updatedAt = new Date();
+  }
+
+  private validateTargetAmount(
+    targetAmount: string | null,
+    receivedAmount: string,
+  ): void {
+    if (targetAmount === null) {
+      return;
+    }
+
+    if (isNegativeDecimal(targetAmount) || isZeroDecimal(targetAmount)) {
+      throw new InvalidWishTargetAmountException();
+    }
+
+    const remainingAfterTarget = subtractDecimal(targetAmount, receivedAmount);
+
+    if (isNegativeDecimal(remainingAfterTarget)) {
+      throw new WishTargetAmountTooLowException();
+    }
   }
 }

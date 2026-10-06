@@ -12,6 +12,7 @@ import { UsersModule } from "./api/users/users.module";
 import { WithdrawalsModule } from "./api/withdrawals/withdrawals.module";
 import { InfrastructureModule } from "./infrastructure/infrastructure.module";
 import { ListsModule } from "@api/lists/lists.module";
+import { WishesModule } from "@api/wishes/wishes.module";
 
 /**
  * Root application module.
@@ -61,6 +62,8 @@ import { ListsModule } from "@api/lists/lists.module";
     HealthModule,
 
     ListsModule,
+
+    WishesModule,
   ],
 
   /**

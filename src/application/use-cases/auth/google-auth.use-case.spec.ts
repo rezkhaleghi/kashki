@@ -1,104 +1,142 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+
 import { User } from "@domain/entities/user.entity";
-import { UserRole } from "@domain/enums/user-role.enum";
-import { GoogleAuthUseCase } from "./google-auth.use-case";
 import { UserStatus } from "@domain/enums/user-status.enum";
+import { InvalidCredentialsException } from "@domain/exceptions/domain.exception";
+
+import { GoogleAuthUseCase } from "./google-auth.use-case";
 
 describe("GoogleAuthUseCase", () => {
-  const findByEmail = jest.fn<() => Promise<User | null>>();
   const findByGoogleId = jest.fn<() => Promise<User | null>>();
+  const findByEmail = jest.fn<() => Promise<User | null>>();
   const save = jest.fn<(user: User) => Promise<User>>();
+  const createList = jest.fn();
 
-  const repository = {
-    findByEmail,
-    findByGoogleId,
-    save,
+  const unitOfWork = {
+    execute: jest.fn(),
   };
-
-  const useCase = new GoogleAuthUseCase(repository as any);
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    unitOfWork.execute.mockImplementation(
+      async (work: (repositories: any) => Promise<unknown>) =>
+        work({
+          userRepository: {
+            findByGoogleId,
+            findByEmail,
+            save,
+          },
+          listRepository: {
+            create: createList,
+          },
+        }),
+    );
+
+    save.mockImplementation(async (user) => user);
+    createList.mockImplementation(async (list) => list);
   });
 
-  it("returns an account already linked to Google", async () => {
-    const user = User.restore({
-      id: "user-id",
+  it("returns the linked active user without creating a list", async () => {
+    const user = User.create({
+      id: "user-1",
       email: "user@example.com",
       hashedPassword: null,
-      role: UserRole.USER,
-      emailVerified: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      googleId: "google-id",
-      firstName: null,
-      lastName: null,
-      userName: null,
-      dateOfBirth: null,
-      avatar: null,
-      bio: null,
-      status: UserStatus.ACTIVE,
+      googleId: "google-1",
     });
 
     findByGoogleId.mockResolvedValue(user);
 
-    await expect(
-      useCase.execute({
-        email: "other@example.com",
-        googleId: "google-id",
-      }),
-    ).resolves.toBe(user);
+    const useCase = new GoogleAuthUseCase(unitOfWork as any);
 
-    expect(findByGoogleId).toHaveBeenCalledWith("google-id");
+    const result = await useCase.execute({
+      email: "user@example.com",
+      googleId: "google-1",
+    });
+
+    expect(result).toBe(user);
+    expect(findByGoogleId).toHaveBeenCalledWith("google-1");
     expect(findByEmail).not.toHaveBeenCalled();
-    expect(save).not.toHaveBeenCalled();
+    expect(createList).not.toHaveBeenCalled();
   });
 
-  it("links and verifies an existing local account", async () => {
+  it("rejects a linked restricted user", async () => {
     const user = User.create({
-      id: "user-id",
+      id: "user-1",
       email: "user@example.com",
-      hashedPassword: "hashed-password",
+      hashedPassword: null,
+      googleId: "google-1",
+    });
+
+    user.restrict();
+
+    findByGoogleId.mockResolvedValue(user);
+
+    const useCase = new GoogleAuthUseCase(unitOfWork as any);
+
+    await expect(
+      useCase.execute({
+        email: "user@example.com",
+        googleId: "google-1",
+      }),
+    ).rejects.toBeInstanceOf(InvalidCredentialsException);
+
+    expect(createList).not.toHaveBeenCalled();
+  });
+
+  it("links Google to an existing active user without creating a list", async () => {
+    const user = User.create({
+      id: "user-1",
+      email: "user@example.com",
+      hashedPassword: "hashed",
     });
 
     findByGoogleId.mockResolvedValue(null);
     findByEmail.mockResolvedValue(user);
-    save.mockResolvedValue(user);
 
-    await expect(
-      useCase.execute({
-        email: " USER@example.com ",
-        googleId: "google-id",
-      }),
-    ).resolves.toBe(user);
-
-    expect(findByGoogleId).toHaveBeenCalledWith("google-id");
-    expect(findByEmail).toHaveBeenCalledWith("user@example.com");
-
-    expect(user.googleId).toBe("google-id");
-    expect(user.emailVerified).toBe(true);
-
-    expect(save).toHaveBeenCalledWith(user);
-  });
-
-  it("creates a verified Google account when no account exists", async () => {
-    findByGoogleId.mockResolvedValue(null);
-    findByEmail.mockResolvedValue(null);
-    save.mockImplementation(async (user) => user);
+    const useCase = new GoogleAuthUseCase(unitOfWork as any);
 
     const result = await useCase.execute({
       email: " USER@example.com ",
-      googleId: "google-id",
+      googleId: "google-1",
+    });
+
+    expect(result).toBe(user);
+    expect(user.googleId).toBe("google-1");
+    expect(user.emailVerified).toBe(true);
+    expect(save).toHaveBeenCalledWith(user);
+    expect(createList).not.toHaveBeenCalled();
+  });
+
+  it("creates a new Google user and their Birthday list in the same unit of work", async () => {
+    findByGoogleId.mockResolvedValue(null);
+    findByEmail.mockResolvedValue(null);
+
+    const useCase = new GoogleAuthUseCase(unitOfWork as any);
+
+    const result = await useCase.execute({
+      email: " USER@example.com ",
+      googleId: "google-1",
     });
 
     expect(result.email).toBe("user@example.com");
-    expect(result.googleId).toBe("google-id");
-    expect(result.emailVerified).toBe(true);
-    expect(result.role).toBe(UserRole.USER);
+    expect(result.googleId).toBe("google-1");
     expect(result.hashedPassword).toBeNull();
+    expect(result.emailVerified).toBe(true);
+    expect(result.status).toBe(UserStatus.ACTIVE);
 
-    expect(findByGoogleId).toHaveBeenCalledWith("google-id");
-    expect(findByEmail).toHaveBeenCalledWith("user@example.com");
-    expect(save).toHaveBeenCalledWith(result);
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: "user@example.com",
+        googleId: "google-1",
+      }),
+    );
+
+    expect(createList).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: result.id,
+        name: "Birthday",
+      }),
+    );
   });
 });

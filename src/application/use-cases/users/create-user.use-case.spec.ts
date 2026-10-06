@@ -10,6 +10,7 @@ describe("CreateUserUseCase", () => {
   const findByEmail = jest.fn<() => Promise<User | null>>();
   const save = jest.fn<(user: User) => Promise<User>>();
   const createBalance = jest.fn();
+  const createList = jest.fn();
 
   const hash = jest.fn<(password: string) => Promise<string>>();
 
@@ -25,6 +26,8 @@ describe("CreateUserUseCase", () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    configService.get.mockReturnValue("USD");
+
     unitOfWork.execute.mockImplementation(
       async (work: (repositories: any) => Promise<unknown>) =>
         work({
@@ -35,15 +38,20 @@ describe("CreateUserUseCase", () => {
           userBalanceRepository: {
             create: createBalance,
           },
+          listRepository: {
+            create: createList,
+          },
         }),
     );
   });
 
-  it("normalizes, hashes, verifies, and saves a new user", async () => {
+  it("normalizes, hashes, verifies, saves the user, creates the balance, and creates the Birthday list", async () => {
     findByEmail.mockResolvedValue(null);
     hash.mockResolvedValue("hashed");
+
     save.mockImplementation(async (user) => user);
     createBalance.mockImplementation(async (balance) => balance);
+    createList.mockImplementation(async (list) => list);
 
     const useCase = new CreateUserUseCase(
       { hash } as any,
@@ -80,10 +88,15 @@ describe("CreateUserUseCase", () => {
       }),
     );
 
-    expect(unitOfWork.execute).toHaveBeenCalled();
+    expect(createList).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: result.id,
+        name: "Birthday",
+      }),
+    );
   });
 
-  it("rejects an existing email", async () => {
+  it("rejects an existing email without creating a balance or list", async () => {
     findByEmail.mockResolvedValue(
       User.create({
         id: "id",
@@ -109,5 +122,6 @@ describe("CreateUserUseCase", () => {
     expect(hash).toHaveBeenCalledWith("password");
     expect(save).not.toHaveBeenCalled();
     expect(createBalance).not.toHaveBeenCalled();
+    expect(createList).not.toHaveBeenCalled();
   });
 });

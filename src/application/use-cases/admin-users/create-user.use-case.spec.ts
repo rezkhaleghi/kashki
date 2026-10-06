@@ -18,6 +18,10 @@ describe("CreateAdminUserUseCase", () => {
     create: jest.fn(),
   };
 
+  const listRepository = {
+    create: jest.fn(),
+  };
+
   const auditLogRepository = {
     create: jest.fn(),
   };
@@ -36,6 +40,7 @@ describe("CreateAdminUserUseCase", () => {
         work({
           userRepository: repository,
           userBalanceRepository,
+          listRepository,
           auditLogRepository,
         }),
     );
@@ -44,16 +49,18 @@ describe("CreateAdminUserUseCase", () => {
       async (balance: unknown) => balance,
     );
 
+    listRepository.create.mockImplementation(async (list: unknown) => list);
+
     auditLogRepository.create.mockImplementation(
       async (auditLog: unknown) => auditLog,
     );
-  });
-
-  it("creates an admin user with a normalized email", async () => {
-    repository.findByEmail.mockResolvedValue(null);
-    hash.mockResolvedValue("hashed");
 
     repository.save.mockImplementation(async (user) => user);
+  });
+
+  it("creates an admin user, balance, Birthday list, and audit log", async () => {
+    repository.findByEmail.mockResolvedValue(null);
+    hash.mockResolvedValue("hashed");
 
     const useCase = new CreateAdminUserUseCase(
       { hash } as any,
@@ -95,6 +102,13 @@ describe("CreateAdminUserUseCase", () => {
       }),
     );
 
+    expect(listRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: result.id,
+        name: "Birthday",
+      }),
+    );
+
     expect(auditLogRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         actorUserId: "admin-user-id",
@@ -110,7 +124,7 @@ describe("CreateAdminUserUseCase", () => {
     expect(unitOfWork.execute).toHaveBeenCalled();
   });
 
-  it("rejects duplicate admin email", async () => {
+  it("rejects duplicate admin email without creating balance, list, or audit log", async () => {
     repository.findByEmail.mockResolvedValue(
       User.create({
         id: "id",
@@ -139,6 +153,7 @@ describe("CreateAdminUserUseCase", () => {
 
     expect(repository.save).not.toHaveBeenCalled();
     expect(userBalanceRepository.create).not.toHaveBeenCalled();
+    expect(listRepository.create).not.toHaveBeenCalled();
     expect(auditLogRepository.create).not.toHaveBeenCalled();
   });
 });

@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { User } from "@domain/entities/user.entity";
 import { UserBalance } from "@domain/entities/user-balance.entity";
+import { List } from "@domain/entities/list.entity";
 import { AuditLog } from "@domain/entities/audit-log.entity";
 
 import { UserRole } from "@domain/enums/user-role.enum";
@@ -13,6 +14,8 @@ import { UserAlreadyExistsException } from "@domain/exceptions/domain.exception"
 import { PasswordHasher } from "@application/interfaces/password-hasher.interface";
 import { UnitOfWork } from "@application/interfaces/unit-of-work.interface";
 import { normalizeEmail } from "@domain/utils/normalize-email";
+
+const DEFAULT_BIRTHDAY_LIST_NAME = "Birthday";
 
 export interface CreateAdminUserInput {
   email: string;
@@ -36,7 +39,12 @@ export class CreateAdminUserUseCase {
     const hashedPassword = await this.passwordHasher.hash(input.password);
 
     return this.unitOfWork.execute(
-      async ({ userRepository, userBalanceRepository, auditLogRepository }) => {
+      async ({
+        userRepository,
+        userBalanceRepository,
+        listRepository,
+        auditLogRepository,
+      }) => {
         if (await userRepository.findByEmail(email)) {
           throw new UserAlreadyExistsException(email);
         }
@@ -54,9 +62,15 @@ export class CreateAdminUserUseCase {
           amount: "0",
         });
 
+        const birthdayList = List.create({
+          userId: user.id,
+          name: DEFAULT_BIRTHDAY_LIST_NAME,
+        });
+
         const saved = await userRepository.save(user);
 
         await userBalanceRepository.create(balance);
+        await listRepository.create(birthdayList);
 
         await auditLogRepository.create(
           AuditLog.create({

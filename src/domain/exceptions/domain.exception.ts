@@ -308,6 +308,14 @@ export class WishCurrencyChangeNotAllowedException extends DomainException {
   }
 }
 
+export class WishCannotBeDeletedException extends DomainException {
+  constructor() {
+    super(
+      "Wish cannot be deleted because one or more gifts have already been received.",
+    );
+  }
+}
+
 // Gift
 
 export class GiftNotFoundException extends DomainException {

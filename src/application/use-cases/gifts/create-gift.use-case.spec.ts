@@ -70,8 +70,10 @@ describe("CreateGiftUseCase", () => {
     repositories = {
       listRepository: {
         findById: jest.fn(),
+        findByIdForUpdate: jest.fn(),
       },
       wishRepository: {
+        findById: jest.fn(),
         findByIdForUpdate: jest.fn(),
         save: jest.fn(),
       },
@@ -94,7 +96,8 @@ describe("CreateGiftUseCase", () => {
 
     useCase = new CreateGiftUseCase(unitOfWork);
 
-    repositories.listRepository.findById.mockResolvedValue(list);
+    repositories.wishRepository.findById.mockResolvedValue(wish);
+    repositories.listRepository.findByIdForUpdate.mockResolvedValue(list);
     repositories.wishRepository.findByIdForUpdate.mockResolvedValue(wish);
 
     repositories.userBalanceRepository.findByUserIdAndCurrencyForUpdate.mockImplementation(
@@ -129,6 +132,31 @@ describe("CreateGiftUseCase", () => {
 
     repositories.wishRepository.save.mockImplementation(
       async (value: Wish) => value,
+    );
+  });
+
+  it("locks the List before the Wish for a targeted Gift", async () => {
+    await useCase.execute({
+      userId,
+      wishId,
+      amount: "100",
+      currency: PaymentCurrency.USD,
+    });
+
+    expect(repositories.wishRepository.findById).toHaveBeenCalledWith(wishId);
+
+    expect(repositories.listRepository.findByIdForUpdate).toHaveBeenCalledWith(
+      listId,
+    );
+
+    expect(repositories.wishRepository.findByIdForUpdate).toHaveBeenCalledWith(
+      wishId,
+    );
+
+    expect(
+      repositories.listRepository.findByIdForUpdate.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      repositories.wishRepository.findByIdForUpdate.mock.invocationCallOrder[0],
     );
   });
 
@@ -205,6 +233,12 @@ describe("CreateGiftUseCase", () => {
 
     expect(result.wishId).toBeNull();
 
+    expect(repositories.wishRepository.findById).not.toHaveBeenCalled();
+
+    expect(
+      repositories.listRepository.findByIdForUpdate,
+    ).not.toHaveBeenCalled();
+
     expect(
       repositories.wishRepository.findByIdForUpdate,
     ).not.toHaveBeenCalled();
@@ -227,6 +261,92 @@ describe("CreateGiftUseCase", () => {
   });
 
   it("rejects a missing wish", async () => {
+    repositories.wishRepository.findById.mockResolvedValue(null);
+
+    await expect(
+      useCase.execute({
+        userId,
+        wishId,
+        amount: "100",
+        currency: PaymentCurrency.USD,
+      }),
+    ).rejects.toThrow(WishNotFoundException);
+
+    expect(
+      repositories.listRepository.findByIdForUpdate,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("rejects a missing List", async () => {
+    repositories.listRepository.findByIdForUpdate.mockResolvedValue(null);
+
+    await expect(
+      useCase.execute({
+        userId,
+        wishId,
+        amount: "100",
+        currency: PaymentCurrency.USD,
+      }),
+    ).rejects.toThrow(ListNotFoundException);
+
+    expect(
+      repositories.wishRepository.findByIdForUpdate,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("rejects a private wish for a non-owner", async () => {
+    const privateList = List.create({
+      id: listId,
+      userId: ownerId,
+      name: "Private",
+      visibility: ListVisibility.PRIVATE,
+    });
+
+    repositories.listRepository.findByIdForUpdate.mockResolvedValue(
+      privateList,
+    );
+
+    await expect(
+      useCase.execute({
+        userId,
+        wishId,
+        amount: "100",
+        currency: PaymentCurrency.USD,
+      }),
+    ).rejects.toThrow(ListAccessNotAllowedException);
+
+    expect(
+      repositories.wishRepository.findByIdForUpdate,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("rejects a wish whose locked List does not match the Wish", async () => {
+    const differentList = List.create({
+      id: "different-list-id",
+      userId: ownerId,
+      name: "Different",
+      visibility: ListVisibility.PUBLIC,
+    });
+
+    repositories.listRepository.findByIdForUpdate.mockResolvedValue(
+      differentList,
+    );
+
+    await expect(
+      useCase.execute({
+        userId,
+        wishId,
+        amount: "100",
+        currency: PaymentCurrency.USD,
+      }),
+    ).rejects.toThrow(ListNotFoundException);
+
+    expect(
+      repositories.wishRepository.findByIdForUpdate,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("rejects a missing locked Wish", async () => {
     repositories.wishRepository.findByIdForUpdate.mockResolvedValue(null);
 
     await expect(
@@ -239,39 +359,6 @@ describe("CreateGiftUseCase", () => {
     ).rejects.toThrow(WishNotFoundException);
   });
 
-  it("rejects a private wish for a non-owner", async () => {
-    const privateList = List.create({
-      id: listId,
-      userId: ownerId,
-      name: "Private",
-      visibility: ListVisibility.PRIVATE,
-    });
-
-    repositories.listRepository.findById.mockResolvedValue(privateList);
-
-    await expect(
-      useCase.execute({
-        userId,
-        wishId,
-        amount: "100",
-        currency: PaymentCurrency.USD,
-      }),
-    ).rejects.toThrow(ListAccessNotAllowedException);
-  });
-
-  it("rejects a missing list", async () => {
-    repositories.listRepository.findById.mockResolvedValue(null);
-
-    await expect(
-      useCase.execute({
-        userId,
-        wishId,
-        amount: "100",
-        currency: PaymentCurrency.USD,
-      }),
-    ).rejects.toThrow(ListNotFoundException);
-  });
-
   it("rejects a completed wish", async () => {
     const completedWish = Wish.create({
       id: wishId,
@@ -282,6 +369,7 @@ describe("CreateGiftUseCase", () => {
       status: WishStatus.COMPLETED,
     });
 
+    repositories.wishRepository.findById.mockResolvedValue(completedWish);
     repositories.wishRepository.findByIdForUpdate.mockResolvedValue(
       completedWish,
     );
@@ -305,6 +393,7 @@ describe("CreateGiftUseCase", () => {
       currency: null,
     });
 
+    repositories.wishRepository.findById.mockResolvedValue(invalidWish);
     repositories.wishRepository.findByIdForUpdate.mockResolvedValue(
       invalidWish,
     );
@@ -386,6 +475,7 @@ describe("CreateGiftUseCase", () => {
       currency: null,
     });
 
+    repositories.wishRepository.findById.mockResolvedValue(targetlessWish);
     repositories.wishRepository.findByIdForUpdate.mockResolvedValue(
       targetlessWish,
     );

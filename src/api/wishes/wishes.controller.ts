@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   Req,
@@ -13,12 +15,15 @@ import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 
 import { CreateWishUseCase } from "@application/use-cases/wishes/create-wish.use-case";
+import { DeleteWishUseCase } from "@application/use-cases/wishes/delete-wish.use-case";
 import { GetWishUseCase } from "@application/use-cases/wishes/get-wish.use-case";
 import { ListWishesUseCase } from "@application/use-cases/wishes/list-wishes.use-case";
+import { UpdateWishUseCase } from "@application/use-cases/wishes/update-wish.use-case";
 
 import { AuthSessionGuard } from "../auth/auth-session.guard";
 import { CreateWishDto } from "./dtos/create-wish.dto";
 import { ListWishesQueryDto } from "./dtos/list-wishes.query.dto";
+import { UpdateWishDto } from "./dtos/update-wish.dto";
 
 @ApiTags("wishes")
 @Controller("lists/:listId/wishes")
@@ -27,6 +32,8 @@ export class WishesController {
     private readonly createWishUseCase: CreateWishUseCase,
     private readonly listWishesUseCase: ListWishesUseCase,
     private readonly getWishUseCase: GetWishUseCase,
+    private readonly updateWishUseCase: UpdateWishUseCase,
+    private readonly deleteWishUseCase: DeleteWishUseCase,
   ) {}
 
   @Post()
@@ -85,5 +92,58 @@ export class WishesController {
       wishId,
       requesterUserId: req.session?.userId,
     });
+  }
+
+  @Patch(":wishId")
+  @UseGuards(AuthSessionGuard)
+  @ApiOperation({ summary: "Update my wish" })
+  @ApiResponse({ status: 200, description: "Wish updated" })
+  @ApiResponse({ status: 401, description: "Not authenticated" })
+  @ApiResponse({ status: 404, description: "Wish or list not found" })
+  @ApiResponse({
+    status: 409,
+    description: "Wish update violates its financial state",
+  })
+  async update(
+    @Param("listId", ParseUUIDPipe) listId: string,
+    @Param("wishId", ParseUUIDPipe) wishId: string,
+    @Body() dto: UpdateWishDto,
+    @Req() req: Request,
+  ) {
+    return this.updateWishUseCase.execute({
+      userId: req.session.userId!,
+      listId,
+      wishId,
+      title: dto.title,
+      description: dto.description,
+      targetAmount: dto.targetAmount,
+      currency: dto.currency,
+    });
+  }
+
+  @Delete(":wishId")
+  @UseGuards(AuthSessionGuard)
+  @ApiOperation({ summary: "Delete my wish" })
+  @ApiResponse({ status: 200, description: "Wish deleted" })
+  @ApiResponse({ status: 401, description: "Not authenticated" })
+  @ApiResponse({ status: 404, description: "Wish or list not found" })
+  @ApiResponse({
+    status: 409,
+    description: "Wish cannot be deleted because it has gifts",
+  })
+  async delete(
+    @Param("listId", ParseUUIDPipe) listId: string,
+    @Param("wishId", ParseUUIDPipe) wishId: string,
+    @Req() req: Request,
+  ) {
+    await this.deleteWishUseCase.execute({
+      userId: req.session.userId!,
+      listId,
+      wishId,
+    });
+
+    return {
+      message: "Wish deleted",
+    };
   }
 }

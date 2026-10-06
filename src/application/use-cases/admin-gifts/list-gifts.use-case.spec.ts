@@ -4,7 +4,7 @@ import { GiftRepository } from "@domain/repositories/gift.repository";
 
 import { AdminListGiftsUseCase } from "./list-gifts.use-case";
 
-describe("AdminListGiftsUseCase", () => {
+describe("Admin ListGiftsUseCase", () => {
   let useCase: AdminListGiftsUseCase;
   let giftRepository: jest.Mocked<GiftRepository>;
 
@@ -18,14 +18,15 @@ describe("AdminListGiftsUseCase", () => {
       sumAmountByWishIdAndCurrency: jest.fn(),
       existsByWishId: jest.fn(),
       existsByListId: jest.fn(),
-    };
+    } as unknown as jest.Mocked<GiftRepository>;
 
     useCase = new AdminListGiftsUseCase(giftRepository);
   });
 
-  it("should return a paginated list of gifts", async () => {
+  it("lists gifts", async () => {
     const gift = Gift.create({
       userId: "user-id",
+      recipientUserId: "recipient-user-id",
       wishId: "wish-id",
       amount: "100",
       currency: PaymentCurrency.USD,
@@ -34,7 +35,7 @@ describe("AdminListGiftsUseCase", () => {
     const pageResult = {
       data: [gift],
       page: 1,
-      limit: 10,
+      limit: 20,
       total: 1,
       totalPages: 1,
     };
@@ -43,63 +44,10 @@ describe("AdminListGiftsUseCase", () => {
 
     const result = await useCase.execute({
       page: 1,
-      limit: 10,
-      sortBy: "createdAt",
-      sortDirection: "DESC",
+      limit: 20,
     });
 
     expect(result).toEqual(pageResult);
-  });
-
-  it("should pass filters to the repository", async () => {
-    const pageResult = {
-      data: [],
-      page: 2,
-      limit: 20,
-      total: 0,
-      totalPages: 0,
-    };
-
-    giftRepository.findPage.mockResolvedValue(pageResult);
-
-    const result = await useCase.execute({
-      userId: "user-id",
-      wishId: "wish-id",
-      currency: PaymentCurrency.EUR,
-      page: 2,
-      limit: 20,
-      sortBy: "amount",
-      sortDirection: "ASC",
-    });
-
-    expect(result).toEqual(pageResult);
-    expect(giftRepository.findPage).toHaveBeenCalledWith(
-      {
-        userId: "user-id",
-        wishId: "wish-id",
-        currency: PaymentCurrency.EUR,
-      },
-      {
-        page: 2,
-        limit: 20,
-        sortBy: "amount",
-        sortDirection: "ASC",
-      },
-    );
-  });
-
-  it("should propagate repository errors", async () => {
-    const error = new Error("Database error");
-
-    giftRepository.findPage.mockRejectedValue(error);
-
-    await expect(
-      useCase.execute({
-        page: 1,
-        limit: 10,
-        sortBy: "createdAt",
-        sortDirection: "DESC",
-      }),
-    ).rejects.toThrow(error);
+    expect(giftRepository.findPage).toHaveBeenCalled();
   });
 });

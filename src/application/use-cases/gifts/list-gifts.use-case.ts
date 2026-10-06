@@ -13,7 +13,25 @@ import { WishRepository } from "@domain/repositories/wish.repository";
 import { PageQuery, PageResult } from "@shared/pagination/page-query";
 
 export interface ListGiftsInput extends PageQuery<"createdAt" | "amount"> {
-  wishId: string;
+  /**
+   * The authenticated user. Used when listing gifts for the current user.
+   */
+  userId?: string;
+
+  /**
+   * Gifts received by a specific user.
+   */
+  recipientUserId?: string;
+
+  /**
+   * Gifts attached to a specific wish.
+   */
+  wishId?: string;
+
+  /**
+   * Only relevant when wishId is provided.
+   * Required to enforce private-list access.
+   */
   requesterUserId?: string;
 }
 
@@ -30,35 +48,50 @@ export class ListGiftsUseCase {
   ) {}
 
   async execute(input: ListGiftsInput): Promise<PageResult<GiftListItem>> {
-    const wish = await this.wishRepository.findById(input.wishId);
+    /**
+     * Wish access is special because private/unlisted visibility rules apply
+     * only when gifts are requested for a specific Wish.
+     *
+     * Given/received gift history does not need Wish/List lookup.
+     */
+    if (input.wishId) {
+      const wish = await this.wishRepository.findById(input.wishId);
 
-    if (!wish) {
-      throw new WishNotFoundException();
+      if (!wish) {
+        throw new WishNotFoundException();
+      }
+
+      const list = await this.listRepository.findById(wish.listId);
+
+      if (!list) {
+        throw new ListNotFoundException();
+      }
+
+      if (
+        list.visibility === ListVisibility.PRIVATE &&
+        list.userId !== input.requesterUserId
+      ) {
+        throw new ListAccessNotAllowedException();
+      }
     }
 
-    const list = await this.listRepository.findById(wish.listId);
-
-    if (!list) {
-      throw new ListNotFoundException();
-    }
-
-    if (
-      list.visibility === ListVisibility.PRIVATE &&
-      list.userId !== input.requesterUserId
-    ) {
-      throw new ListAccessNotAllowedException();
-    }
-
-    const result = await this.giftRepository.findPageByWishId(input.wishId, {
-      page: input.page,
-      limit: input.limit,
-      sortBy: input.sortBy,
-      sortDirection: input.sortDirection,
-    });
+    const result = await this.giftRepository.findPage(
+      {
+        userId: input.userId,
+        recipientUserId: input.recipientUserId,
+        wishId: input.wishId,
+      },
+      {
+        page: input.page,
+        limit: input.limit,
+        sortBy: input.sortBy,
+        sortDirection: input.sortDirection,
+      },
+    );
 
     /**
-     * Anonymous Gifts still contribute to the Wish financially, but their
-     * giver identity must not be exposed through the read API.
+     * Anonymous gifts still contribute financially, but the giver's identity
+     * must not be exposed when the gifts are displayed.
      */
     return {
       ...result,

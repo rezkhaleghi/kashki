@@ -56,6 +56,44 @@ export class GiftsController {
     });
   }
 
+  @Get("gifts/given")
+  @UseGuards(AuthSessionGuard)
+  @ApiOperation({
+    summary: "List gifts given by the current user",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Gifts given by the authenticated user",
+  })
+  async listGiven(@Req() req: Request, @Query() query: ListGiftsQueryDto) {
+    return this.listGiftsUseCase.execute({
+      userId: req.session.userId!,
+      page: query.page,
+      limit: query.limit,
+      sortBy: query.sortBy,
+      sortDirection: query.sortDirection,
+    });
+  }
+
+  @Get("gifts/received")
+  @UseGuards(AuthSessionGuard)
+  @ApiOperation({
+    summary: "List gifts received by the current user",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Gifts received by the authenticated user",
+  })
+  async listReceived(@Req() req: Request, @Query() query: ListGiftsQueryDto) {
+    return this.listGiftsUseCase.execute({
+      recipientUserId: req.session.userId!,
+      page: query.page,
+      limit: query.limit,
+      sortBy: query.sortBy,
+      sortDirection: query.sortDirection,
+    });
+  }
+
   @Get("wishes/:wishId/gifts")
   @ApiOperation({
     summary: "List gifts for a wish",
@@ -74,7 +112,7 @@ export class GiftsController {
     status: 404,
     description: "Wish or list not found",
   })
-  async list(
+  async listWishGifts(
     @Param("wishId") wishId: string,
     @Query() query: ListGiftsQueryDto,
     @Req() req: Request,

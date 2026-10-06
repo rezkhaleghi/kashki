@@ -22,6 +22,7 @@ describe("ListGiftsUseCase", () => {
   const listId = "list-id";
   const ownerId = "owner-id";
   const giverId = "giver-id";
+  const recipientId = "recipient-id";
 
   let useCase: ListGiftsUseCase;
   let giftRepository: jest.Mocked<GiftRepository>;
@@ -52,8 +53,10 @@ describe("ListGiftsUseCase", () => {
       findById: jest.fn(),
       findPageByWishId: jest.fn(),
       findPageByUserId: jest.fn(),
+      findPage: jest.fn(),
       sumAmountByWishIdAndCurrency: jest.fn(),
       existsByWishId: jest.fn(),
+      existsByListId: jest.fn(),
     } as unknown as jest.Mocked<GiftRepository>;
 
     wishRepository = {
@@ -86,7 +89,7 @@ describe("ListGiftsUseCase", () => {
     wishRepository.findById.mockResolvedValue(wish);
     listRepository.findById.mockResolvedValue(list);
 
-    giftRepository.findPageByWishId.mockResolvedValue({
+    giftRepository.findPage.mockResolvedValue({
       data: [],
       page: 1,
       limit: 20,
@@ -95,10 +98,11 @@ describe("ListGiftsUseCase", () => {
     });
   });
 
-  it("lists gifts on a public wish", async () => {
+  it("lists gifts given by a user", async () => {
     const gift = Gift.create({
       id: "gift-1",
       userId: giverId,
+      recipientUserId: recipientId,
       wishId,
       amount: "100",
       currency: PaymentCurrency.USD,
@@ -112,7 +116,99 @@ describe("ListGiftsUseCase", () => {
       totalPages: 1,
     };
 
-    giftRepository.findPageByWishId.mockResolvedValue(pageResult);
+    giftRepository.findPage.mockResolvedValue(pageResult);
+
+    const result = await useCase.execute({
+      userId: giverId,
+      page: 1,
+      limit: 20,
+      sortBy: "createdAt",
+      sortDirection: "DESC",
+    });
+
+    expect(result.data).toEqual([gift]);
+
+    expect(giftRepository.findPage).toHaveBeenCalledWith(
+      {
+        userId: giverId,
+        recipientUserId: undefined,
+        wishId: undefined,
+      },
+      {
+        page: 1,
+        limit: 20,
+        sortBy: "createdAt",
+        sortDirection: "DESC",
+      },
+    );
+
+    expect(wishRepository.findById).not.toHaveBeenCalled();
+    expect(listRepository.findById).not.toHaveBeenCalled();
+  });
+
+  it("lists gifts received by a user", async () => {
+    const gift = Gift.create({
+      id: "gift-1",
+      userId: giverId,
+      recipientUserId: recipientId,
+      wishId: null,
+      amount: "100",
+      currency: PaymentCurrency.USD,
+    });
+
+    giftRepository.findPage.mockResolvedValue({
+      data: [gift],
+      page: 1,
+      limit: 20,
+      total: 1,
+      totalPages: 1,
+    });
+
+    const result = await useCase.execute({
+      recipientUserId: recipientId,
+      page: 1,
+      limit: 20,
+    });
+
+    expect(result.data).toEqual([gift]);
+
+    expect(giftRepository.findPage).toHaveBeenCalledWith(
+      {
+        userId: undefined,
+        recipientUserId: recipientId,
+        wishId: undefined,
+      },
+      {
+        page: 1,
+        limit: 20,
+        sortBy: undefined,
+        sortDirection: undefined,
+      },
+    );
+
+    expect(wishRepository.findById).not.toHaveBeenCalled();
+    expect(listRepository.findById).not.toHaveBeenCalled();
+  });
+
+  it("lists gifts for a wish", async () => {
+    const gift = Gift.create({
+      id: "gift-1",
+      userId: giverId,
+      recipientUserId: ownerId,
+      wishId,
+      amount: "100",
+      currency: PaymentCurrency.USD,
+    });
+
+    const pageResult = {
+      data: [gift],
+      page: 1,
+      limit: 20,
+      total: 1,
+      totalPages: 1,
+    };
+
+    giftRepository.findPage.mockResolvedValue(pageResult);
 
     const result = await useCase.execute({
       wishId,
@@ -122,30 +218,38 @@ describe("ListGiftsUseCase", () => {
       sortDirection: "DESC",
     });
 
-    expect(result).toEqual({
-      ...pageResult,
-      data: [gift],
-    });
+    expect(result.data).toEqual([gift]);
 
-    expect(giftRepository.findPageByWishId).toHaveBeenCalledWith(wishId, {
-      page: 1,
-      limit: 20,
-      sortBy: "createdAt",
-      sortDirection: "DESC",
-    });
+    expect(giftRepository.findPage).toHaveBeenCalledWith(
+      {
+        userId: undefined,
+        recipientUserId: undefined,
+        wishId,
+      },
+      {
+        page: 1,
+        limit: 20,
+        sortBy: "createdAt",
+        sortDirection: "DESC",
+      },
+    );
+
+    expect(wishRepository.findById).toHaveBeenCalledWith(wishId);
+    expect(listRepository.findById).toHaveBeenCalledWith(listId);
   });
 
   it("hides the giver identity for anonymous gifts", async () => {
     const anonymousGift = Gift.create({
       id: "gift-1",
       userId: giverId,
+      recipientUserId: ownerId,
       wishId,
       amount: "100",
       currency: PaymentCurrency.USD,
       anonymous: true,
     });
 
-    giftRepository.findPageByWishId.mockResolvedValue({
+    giftRepository.findPage.mockResolvedValue({
       data: [anonymousGift],
       page: 1,
       limit: 20,
@@ -169,53 +273,7 @@ describe("ListGiftsUseCase", () => {
     );
   });
 
-  it("preserves the giver identity for non-anonymous gifts", async () => {
-    const gift = Gift.create({
-      id: "gift-1",
-      userId: giverId,
-      wishId,
-      amount: "100",
-      currency: PaymentCurrency.USD,
-      anonymous: false,
-    });
-
-    giftRepository.findPageByWishId.mockResolvedValue({
-      data: [gift],
-      page: 1,
-      limit: 20,
-      total: 1,
-      totalPages: 1,
-    });
-
-    const result = await useCase.execute({
-      wishId,
-      page: 1,
-      limit: 20,
-    });
-
-    expect(result.data[0].userId).toBe(giverId);
-  });
-
-  it("lists gifts on an unlisted wish when the list ID is known", async () => {
-    list = List.create({
-      id: listId,
-      userId: ownerId,
-      name: "Birthday",
-      visibility: ListVisibility.UNLISTED,
-    });
-
-    listRepository.findById.mockResolvedValue(list);
-
-    await expect(
-      useCase.execute({
-        wishId,
-        page: 1,
-        limit: 20,
-      }),
-    ).resolves.toBeDefined();
-  });
-
-  it("allows the owner to list gifts on a private wish", async () => {
+  it("allows the owner to list gifts for a private wish", async () => {
     list = List.create({
       id: listId,
       userId: ownerId,
@@ -233,6 +291,8 @@ describe("ListGiftsUseCase", () => {
         limit: 20,
       }),
     ).resolves.toBeDefined();
+
+    expect(giftRepository.findPage).toHaveBeenCalled();
   });
 
   it("rejects another user from a private wish", async () => {
@@ -254,7 +314,26 @@ describe("ListGiftsUseCase", () => {
       }),
     ).rejects.toThrow(ListAccessNotAllowedException);
 
-    expect(giftRepository.findPageByWishId).not.toHaveBeenCalled();
+    expect(giftRepository.findPage).not.toHaveBeenCalled();
+  });
+
+  it("allows gifts for an unlisted wish", async () => {
+    list = List.create({
+      id: listId,
+      userId: ownerId,
+      name: "Birthday",
+      visibility: ListVisibility.UNLISTED,
+    });
+
+    listRepository.findById.mockResolvedValue(list);
+
+    await expect(
+      useCase.execute({
+        wishId,
+        page: 1,
+        limit: 20,
+      }),
+    ).resolves.toBeDefined();
   });
 
   it("rejects a missing wish", async () => {
@@ -268,7 +347,7 @@ describe("ListGiftsUseCase", () => {
       }),
     ).rejects.toThrow(WishNotFoundException);
 
-    expect(giftRepository.findPageByWishId).not.toHaveBeenCalled();
+    expect(giftRepository.findPage).not.toHaveBeenCalled();
   });
 
   it("rejects a missing list", async () => {
@@ -282,6 +361,6 @@ describe("ListGiftsUseCase", () => {
       }),
     ).rejects.toThrow(ListNotFoundException);
 
-    expect(giftRepository.findPageByWishId).not.toHaveBeenCalled();
+    expect(giftRepository.findPage).not.toHaveBeenCalled();
   });
 });

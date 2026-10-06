@@ -16,12 +16,22 @@ export class CreateGiftDto {
   @ApiPropertyOptional({
     format: "uuid",
     description:
-      "Wish to contribute to. Omit this field for a general cash contribution.",
+      "Wish to contribute to. When supplied, the Wish owner is the recipient.",
     nullable: true,
   })
   @IsOptional()
   @IsUUID()
   wishId?: string | null;
+
+  @ApiPropertyOptional({
+    format: "uuid",
+    description:
+      "Recipient user for a general cash gift. Required when wishId is omitted.",
+    nullable: true,
+  })
+  @IsOptional()
+  @IsUUID()
+  recipientUserId?: string | null;
 
   @ApiProperty({
     example: "100.00",

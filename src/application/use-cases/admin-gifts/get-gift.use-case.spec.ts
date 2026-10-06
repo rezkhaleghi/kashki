@@ -28,6 +28,7 @@ describe("AdminGetGiftUseCase", () => {
     const gift = Gift.create({
       id: "gift-id",
       userId: "user-id",
+      recipientUserId: "recipient-user-id",
       wishId: "wish-id",
       amount: "100",
       currency: PaymentCurrency.USD,
@@ -44,7 +45,7 @@ describe("AdminGetGiftUseCase", () => {
   it("should throw GiftNotFoundException when the gift does not exist", async () => {
     giftRepository.findById.mockResolvedValue(null);
 
-    await expect(useCase.execute("gift-id")).rejects.toThrow(
+    await expect(useCase.execute("missing-gift-id")).rejects.toThrow(
       GiftNotFoundException,
     );
   });

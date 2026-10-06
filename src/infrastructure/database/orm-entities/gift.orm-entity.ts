@@ -7,13 +7,16 @@ import {
   ManyToOne,
   PrimaryColumn,
 } from "typeorm";
+
 import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
+
 import { UserOrmEntity } from "./user.orm-entity";
 import { WishOrmEntity } from "./wish.orm-entity";
 
 @Entity("gifts")
 @Index(["wishId", "createdAt"])
 @Index(["userId", "createdAt"])
+@Index(["recipientUserId", "createdAt"])
 export class GiftOrmEntity {
   @PrimaryColumn("uuid")
   id!: string;
@@ -27,6 +30,16 @@ export class GiftOrmEntity {
   })
   @JoinColumn({ name: "userId" })
   user!: UserOrmEntity;
+
+  @Column("uuid")
+  recipientUserId!: string;
+
+  @ManyToOne(() => UserOrmEntity, {
+    nullable: false,
+    onDelete: "RESTRICT",
+  })
+  @JoinColumn({ name: "recipientUserId" })
+  recipientUser!: UserOrmEntity;
 
   @Column("uuid", { nullable: true })
   wishId!: string | null;

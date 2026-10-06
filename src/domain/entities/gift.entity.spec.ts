@@ -9,6 +9,7 @@ import { Gift } from "./gift.entity";
 describe("Gift", () => {
   const baseProps = {
     userId: "user-id",
+    recipientUserId: "recipient-id",
     wishId: "wish-id",
     amount: "100.50",
     currency: PaymentCurrency.USD,
@@ -20,6 +21,7 @@ describe("Gift", () => {
 
       expect(gift.id).toBeDefined();
       expect(gift.userId).toBe("user-id");
+      expect(gift.recipientUserId).toBe("recipient-id");
       expect(gift.wishId).toBe("wish-id");
       expect(gift.amount).toBe("100.50");
       expect(gift.currency).toBe(PaymentCurrency.USD);
@@ -28,13 +30,23 @@ describe("Gift", () => {
       expect(gift.createdAt).toBeInstanceOf(Date);
     });
 
-    it("creates a general cash gift without a wish", () => {
+    it("creates a general cash gift with an explicit recipient", () => {
       const gift = Gift.create({
         ...baseProps,
         wishId: null,
       });
 
       expect(gift.wishId).toBeNull();
+      expect(gift.recipientUserId).toBe("recipient-id");
+    });
+
+    it("rejects an empty recipient", () => {
+      expect(() =>
+        Gift.create({
+          ...baseProps,
+          recipientUserId: "   ",
+        }),
+      ).toThrow(FieldMustExistException);
     });
 
     it("defaults anonymous to false", () => {
@@ -52,7 +64,7 @@ describe("Gift", () => {
       expect(gift.anonymous).toBe(true);
     });
 
-    it("trims the user ID and rejects an empty value", () => {
+    it("rejects an empty user ID", () => {
       expect(() =>
         Gift.create({
           ...baseProps,
@@ -105,6 +117,7 @@ describe("Gift", () => {
       const gift = Gift.restore({
         id: "gift-id",
         userId: "user-id",
+        recipientUserId: "recipient-id",
         wishId: null,
         amount: "50",
         currency: PaymentCurrency.EUR,
@@ -115,6 +128,7 @@ describe("Gift", () => {
 
       expect(gift.id).toBe("gift-id");
       expect(gift.userId).toBe("user-id");
+      expect(gift.recipientUserId).toBe("recipient-id");
       expect(gift.wishId).toBeNull();
       expect(gift.amount).toBe("50");
       expect(gift.currency).toBe(PaymentCurrency.EUR);

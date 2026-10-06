@@ -59,6 +59,12 @@ export class GiftRepositoryImpl implements GiftRepository {
       });
     }
 
+    if (filters.recipientUserId) {
+      query.andWhere("gift.recipientUserId = :recipientUserId", {
+        recipientUserId: filters.recipientUserId,
+      });
+    }
+
     if (filters.wishId) {
       query.andWhere("gift.wishId = :wishId", {
         wishId: filters.wishId,
@@ -123,6 +129,7 @@ export class GiftRepositoryImpl implements GiftRepository {
     return Gift.restore({
       id: row.id,
       userId: row.userId,
+      recipientUserId: row.recipientUserId,
       wishId: row.wishId,
       amount: row.amount,
       currency: row.currency,
@@ -137,6 +144,7 @@ export class GiftRepositoryImpl implements GiftRepository {
 
     row.id = gift.id;
     row.userId = gift.userId;
+    row.recipientUserId = gift.recipientUserId;
     row.wishId = gift.wishId;
     row.amount = gift.amount;
     row.currency = gift.currency;

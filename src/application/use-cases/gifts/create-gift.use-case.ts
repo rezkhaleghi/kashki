@@ -30,6 +30,7 @@ import { UnitOfWork } from "@application/interfaces/unit-of-work.interface";
 
 export interface CreateGiftInput {
   userId: string;
+  recipientUserId?: string | null;
   wishId?: string | null;
   amount: string;
   currency: PaymentCurrency;
@@ -54,18 +55,6 @@ export class CreateGiftUseCase {
         let recipientUserId: string | null = null;
 
         if (input.wishId) {
-          /**
-           * Read the Wish without a lock only to discover its List.
-           *
-           * The Wish itself must not be locked yet because List deletion
-           * uses the List as its synchronization boundary. Targeted Gifts
-           * therefore follow the same lock hierarchy:
-           *
-           *   List -> Wish -> balances
-           *
-           * This prevents Gift creation and List deletion from acquiring
-           * List/Wish locks in opposite orders.
-           */
           const existingWish = await wishRepository.findById(input.wishId);
 
           if (!existingWish) {
@@ -73,10 +62,8 @@ export class CreateGiftUseCase {
           }
 
           /**
-           * Lock the List before locking the Wish.
-           *
-           * The List lock synchronizes this Gift operation with operations
-           * such as List deletion.
+           * List is the synchronization boundary shared with List deletion.
+           * Always acquire List before Wish for targeted Gift operations.
            */
           const list = await listRepository.findByIdForUpdate(
             existingWish.listId,
@@ -86,17 +73,6 @@ export class CreateGiftUseCase {
             throw new ListNotFoundException();
           }
 
-          /**
-           * The first Wish lookup was intentionally unlocked, so its
-           * relationship cannot be treated as authoritative after the List
-           * lock is acquired.
-           *
-           * If the locked List does not match the List recorded by the Wish,
-           * stop before acquiring the Wish lock.
-           *
-           * ListNotFoundException is used here because the List resolved for
-           * the Gift is not the List that owns the requested Wish.
-           */
           if (list.id !== existingWish.listId) {
             throw new ListNotFoundException();
           }
@@ -110,27 +86,12 @@ export class CreateGiftUseCase {
 
           recipientUserId = list.userId;
 
-          /**
-           * Only after the List has been locked and validated do we lock the
-           * Wish.
-           *
-           * At this point the authoritative lock order is:
-           *
-           *   locked List -> locked Wish
-           */
           wish = await wishRepository.findByIdForUpdate(input.wishId);
 
           if (!wish) {
             throw new WishNotFoundException();
           }
 
-          /**
-           * Verify that the authoritative locked Wish still belongs to the
-           * List we locked above.
-           *
-           * This protects against using stale relationship data from the
-           * initial unlocked Wish lookup.
-           */
           if (wish.listId !== list.id) {
             throw new ListNotFoundException();
           }
@@ -164,33 +125,22 @@ export class CreateGiftUseCase {
               throw new GiftTargetAmountExceededException();
             }
           }
+        } else {
+          /**
+           * General cash gifts have no Wish from which a recipient can be
+           * inferred, so the recipient must be explicit.
+           */
+          recipientUserId = input.recipientUserId?.trim() || null;
+
+          if (!recipientUserId) {
+            throw new UserBalanceNotFoundException(input.currency);
+          }
         }
 
-        /**
-         * Balance rows are locked only after the List and Wish locks.
-         *
-         * Targeted Gift:
-         *
-         *   List -> Wish -> balances
-         *
-         * General cash Gift:
-         *
-         *   balances
-         *
-         * Balance locks themselves use deterministic user-ID ordering so
-         * simultaneous transfers such as A -> B and B -> A cannot acquire
-         * the two balance rows in opposite orders.
-         */
         let giverBalance = null;
         let recipientBalance = null;
 
-        if (recipientUserId === null) {
-          giverBalance =
-            await userBalanceRepository.findByUserIdAndCurrencyForUpdate(
-              input.userId,
-              input.currency,
-            );
-        } else if (recipientUserId === input.userId) {
+        if (recipientUserId === input.userId) {
           giverBalance =
             await userBalanceRepository.findByUserIdAndCurrencyForUpdate(
               input.userId,
@@ -199,6 +149,11 @@ export class CreateGiftUseCase {
 
           recipientBalance = giverBalance;
         } else {
+          /**
+           * Both balance rows participate in the same transfer. Lock them in
+           * deterministic user-ID order to prevent A -> B and B -> A
+           * deadlocks.
+           */
           const firstUserId =
             input.userId < recipientUserId ? input.userId : recipientUserId;
 
@@ -230,7 +185,7 @@ export class CreateGiftUseCase {
           throw new UserBalanceNotFoundException(input.currency);
         }
 
-        if (recipientUserId !== null && !recipientBalance) {
+        if (!recipientBalance) {
           throw new UserBalanceNotFoundException(input.currency);
         }
 
@@ -251,6 +206,7 @@ export class CreateGiftUseCase {
 
         const gift = Gift.create({
           userId: input.userId,
+          recipientUserId,
           wishId: input.wishId ?? null,
           amount: input.amount,
           currency: input.currency,
@@ -260,11 +216,6 @@ export class CreateGiftUseCase {
 
         const savedGift = await giftRepository.create(gift);
 
-        /**
-         * The outgoing ledger entry references the Gift. The recipient's
-         * incoming entry below uses the same referenceId so both ledger
-         * entries can be traced back to the same transfer.
-         */
         await ledgerRepository.create(
           Ledger.create({
             userId: input.userId,
@@ -277,48 +228,35 @@ export class CreateGiftUseCase {
             metadata: {
               giftId: savedGift.id,
               wishId: savedGift.wishId,
+              recipientUserId,
             },
           }),
         );
 
-        /**
-         * A targeted Gift immediately transfers the money to the Wish
-         * owner's balance. There is deliberately no separate claim/status
-         * step: creating the Gift means the transfer is complete.
-         */
-        if (recipientUserId !== null && recipientBalance) {
-          const recipientBalanceBefore = recipientBalance.amount;
+        const recipientBalanceBefore = recipientBalance.amount;
 
-          recipientBalance.credit(input.amount);
+        recipientBalance.credit(input.amount);
 
-          const savedRecipientBalance =
-            await userBalanceRepository.save(recipientBalance);
+        const savedRecipientBalance =
+          await userBalanceRepository.save(recipientBalance);
 
-          await ledgerRepository.create(
-            Ledger.create({
-              userId: recipientUserId,
-              currency: input.currency,
-              amount: input.amount,
-              balanceBefore: recipientBalanceBefore,
-              balanceAfter: savedRecipientBalance.amount,
-              type: LedgerType.TRANSFER_IN,
-              referenceId: savedGift.id,
-              metadata: {
-                giftId: savedGift.id,
-                wishId: savedGift.wishId,
-                fromUserId: input.userId,
-              },
-            }),
-          );
-        }
+        await ledgerRepository.create(
+          Ledger.create({
+            userId: recipientUserId,
+            currency: input.currency,
+            amount: input.amount,
+            balanceBefore: recipientBalanceBefore,
+            balanceAfter: savedRecipientBalance.amount,
+            type: LedgerType.TRANSFER_IN,
+            referenceId: savedGift.id,
+            metadata: {
+              giftId: savedGift.id,
+              wishId: savedGift.wishId,
+              fromUserId: input.userId,
+            },
+          }),
+        );
 
-        /**
-         * The Gift and balance changes are inside the same transaction.
-         *
-         * Recalculate the Wish's received amount and mark it completed only
-         * when it reaches the target exactly. Overflow was already rejected
-         * before the transfer.
-         */
         if (wish && wish.targetAmount !== null) {
           const receivedAmount =
             await giftRepository.sumAmountByWishIdAndCurrency(

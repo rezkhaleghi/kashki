@@ -170,6 +170,8 @@ describe("CreateGiftUseCase", () => {
 
     expect(result).toBeInstanceOf(Gift);
     expect(result.amount).toBe("100");
+    expect(result.userId).toBe(userId);
+    expect(result.recipientUserId).toBe(ownerId);
 
     expect(
       repositories.userBalanceRepository.findByUserIdAndCurrencyForUpdate,
@@ -224,14 +226,17 @@ describe("CreateGiftUseCase", () => {
     );
   });
 
-  it("creates a general cash gift without a wish and only transfers out from the giver", async () => {
+  it("creates a general cash gift without a wish and transfers money to the recipient", async () => {
     const result = await useCase.execute({
       userId,
+      recipientUserId: ownerId,
       amount: "100",
       currency: PaymentCurrency.USD,
     });
 
     expect(result.wishId).toBeNull();
+    expect(result.userId).toBe(userId);
+    expect(result.recipientUserId).toBe(ownerId);
 
     expect(repositories.wishRepository.findById).not.toHaveBeenCalled();
 
@@ -244,17 +249,55 @@ describe("CreateGiftUseCase", () => {
     ).not.toHaveBeenCalled();
 
     expect(balance.amount).toBe("900");
-    expect(recipientBalance.amount).toBe("200");
+    expect(recipientBalance.amount).toBe("300");
 
     expect(
       repositories.userBalanceRepository.findByUserIdAndCurrencyForUpdate,
-    ).toHaveBeenCalledTimes(1);
+    ).toHaveBeenCalledTimes(2);
 
-    expect(repositories.ledgerRepository.create).toHaveBeenCalledTimes(1);
+    expect(
+      repositories.userBalanceRepository.findByUserIdAndCurrencyForUpdate,
+    ).toHaveBeenNthCalledWith(1, userId, PaymentCurrency.USD);
 
-    expect(repositories.ledgerRepository.create).toHaveBeenCalledWith(
+    expect(
+      repositories.userBalanceRepository.findByUserIdAndCurrencyForUpdate,
+    ).toHaveBeenNthCalledWith(2, ownerId, PaymentCurrency.USD);
+
+    expect(repositories.userBalanceRepository.save).toHaveBeenCalledTimes(2);
+
+    expect(repositories.ledgerRepository.create).toHaveBeenCalledTimes(2);
+
+    const ledgerEntries: Ledger[] =
+      repositories.ledgerRepository.create.mock.calls.map(
+        ([ledger]: [Ledger]) => ledger,
+      );
+
+    const transferOut = ledgerEntries.find(
+      (ledger: Ledger) => ledger.type === LedgerType.TRANSFER_OUT,
+    );
+
+    const transferIn = ledgerEntries.find(
+      (ledger: Ledger) => ledger.type === LedgerType.TRANSFER_IN,
+    );
+
+    expect(transferOut).toEqual(
       expect.objectContaining({
+        userId,
+        amount: "-100",
+        balanceBefore: "1000",
+        balanceAfter: "900",
         type: LedgerType.TRANSFER_OUT,
+        referenceId: result.id,
+      }),
+    );
+
+    expect(transferIn).toEqual(
+      expect.objectContaining({
+        userId: ownerId,
+        amount: "100",
+        balanceBefore: "200",
+        balanceAfter: "300",
+        type: LedgerType.TRANSFER_IN,
         referenceId: result.id,
       }),
     );

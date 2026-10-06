@@ -4,6 +4,7 @@ import { PageQuery, PageResult } from "@shared/pagination/page-query";
 
 export interface GiftFilters {
   userId?: string;
+  recipientUserId?: string;
   wishId?: string;
   currency?: PaymentCurrency;
 }

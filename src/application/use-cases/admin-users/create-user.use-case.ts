@@ -9,7 +9,10 @@ import { UserRole } from "@domain/enums/user-role.enum";
 import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
 import { AuditAction } from "@domain/enums/audit-action.enum";
 
-import { UserAlreadyExistsException } from "@domain/exceptions/domain.exception";
+import {
+  UserAlreadyExistsException,
+  UsernameAlreadyExistsException,
+} from "@domain/exceptions/domain.exception";
 
 import { PasswordHasher } from "@application/interfaces/password-hasher.interface";
 import { UnitOfWork } from "@application/interfaces/unit-of-work.interface";
@@ -21,6 +24,7 @@ export interface CreateAdminUserInput {
   email: string;
   password: string;
   role: UserRole;
+  userName: string;
 }
 
 @Injectable()
@@ -35,8 +39,7 @@ export class CreateAdminUserUseCase {
     actorUserId: string,
   ): Promise<User> {
     const email = normalizeEmail(input.email);
-
-    const hashedPassword = await this.passwordHasher.hash(input.password);
+    const userName = input.userName.trim().toLowerCase();
 
     return this.unitOfWork.execute(
       async ({
@@ -49,12 +52,19 @@ export class CreateAdminUserUseCase {
           throw new UserAlreadyExistsException(email);
         }
 
+        if (await userRepository.findByUserName(userName)) {
+          throw new UsernameAlreadyExistsException(userName);
+        }
+
+        const hashedPassword = await this.passwordHasher.hash(input.password);
+
         const user = User.create({
           email,
           hashedPassword,
           role: input.role,
           emailVerified: true,
         });
+        user.update({ userName });
 
         const balance = UserBalance.create({
           userId: user.id,

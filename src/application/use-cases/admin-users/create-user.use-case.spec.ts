@@ -11,6 +11,7 @@ import { CreateAdminUserUseCase } from "./create-user.use-case";
 describe("CreateAdminUserUseCase", () => {
   const repository = {
     findByEmail: jest.fn<() => Promise<User | null>>(),
+    findByUserName: jest.fn<() => Promise<User | null>>(),
     save: jest.fn<(user: User) => Promise<User>>(),
   };
 
@@ -35,6 +36,7 @@ describe("CreateAdminUserUseCase", () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    repository.findByUserName.mockResolvedValue(null);
     unitOfWork.execute.mockImplementation(
       async (work: (repositories: any) => Promise<unknown>) =>
         work({
@@ -72,16 +74,19 @@ describe("CreateAdminUserUseCase", () => {
         email: " ADMIN@example.com ",
         password: "password123",
         role: UserRole.ADMIN,
+        userName: " Admin_User ",
       },
       "admin-user-id",
     );
 
     expect(result.email).toBe("admin@example.com");
+    expect(result.userName).toBe("admin_user");
     expect(result.role).toBe(UserRole.ADMIN);
     expect(result.hashedPassword).toBe("hashed");
     expect(result.emailVerified).toBe(true);
 
     expect(repository.findByEmail).toHaveBeenCalledWith("admin@example.com");
+    expect(repository.findByUserName).toHaveBeenCalledWith("admin_user");
 
     expect(hash).toHaveBeenCalledWith("password123");
 
@@ -146,11 +151,47 @@ describe("CreateAdminUserUseCase", () => {
           email: "admin@example.com",
           password: "password",
           role: UserRole.ADMIN,
+          userName: "admin_user",
         },
         "admin-user-id",
       ),
     ).rejects.toBeInstanceOf(UserAlreadyExistsException);
 
+    expect(repository.save).not.toHaveBeenCalled();
+    expect(userBalanceRepository.create).not.toHaveBeenCalled();
+    expect(listRepository.create).not.toHaveBeenCalled();
+    expect(auditLogRepository.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects a duplicate username without creating an admin user", async () => {
+    repository.findByEmail.mockResolvedValue(null);
+    repository.findByUserName.mockResolvedValue(
+      User.create({
+        id: "existing-user-id",
+        email: "existing@example.com",
+        hashedPassword: "hashed",
+        userName: "admin_user",
+      }),
+    );
+
+    const useCase = new CreateAdminUserUseCase(
+      { hash } as any,
+      unitOfWork as any,
+    );
+
+    await expect(
+      useCase.execute(
+        {
+          email: "admin@example.com",
+          password: "password123",
+          role: UserRole.ADMIN,
+          userName: "Admin_User",
+        },
+        "admin-user-id",
+      ),
+    ).rejects.toThrow("A user with username \"admin_user\" already exists.");
+
+    expect(hash).not.toHaveBeenCalled();
     expect(repository.save).not.toHaveBeenCalled();
     expect(userBalanceRepository.create).not.toHaveBeenCalled();
     expect(listRepository.create).not.toHaveBeenCalled();

@@ -64,7 +64,7 @@ export class List {
       props.userId,
       name,
       props.description?.trim() ?? null,
-      props.visibility ?? ListVisibility.PRIVATE,
+      props.visibility ?? ListVisibility.PUBLIC,
       props.createdAt ?? now,
       props.updatedAt ?? now,
     );

@@ -38,7 +38,7 @@ export class UserOrmEntity {
   userName!: string | null;
 
   @Column({ nullable: true, type: "date" })
-  dateOfBirth!: Date | null;
+  dateOfBirth!: Date | string | null;
 
   /**
    * Controls public birthday presentation.

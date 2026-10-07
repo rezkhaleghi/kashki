@@ -30,6 +30,7 @@ export interface CreateUserProps {
   hashedPassword: string | null;
   role?: UserRole;
   emailVerified?: boolean;
+  userName?: string | null;
   googleId?: string | null;
 }
 

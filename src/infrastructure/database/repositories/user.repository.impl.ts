@@ -20,6 +20,29 @@ import {
   isPostgresUniqueViolation,
 } from "../utils/postgres-error.util";
 
+function toDateOfBirth(value: Date | string | null): Date | null {
+  if (value === null || value instanceof Date) {
+    return value;
+  }
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) {
+    throw new Error(`Invalid dateOfBirth returned by the database: ${value}`);
+  }
+
+  const [, year, month, day] = match;
+  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+  if (
+    date.getUTCFullYear() !== Number(year) ||
+    date.getUTCMonth() !== Number(month) - 1 ||
+    date.getUTCDate() !== Number(day)
+  ) {
+    throw new Error(`Invalid dateOfBirth returned by the database: ${value}`);
+  }
+
+  return date;
+}
+
 /**
  * Concrete implementation of the domain's UserRepository contract.
  *
@@ -414,7 +437,7 @@ export class UserRepositoryImpl implements UserRepository {
       firstName: row.firstName,
       lastName: row.lastName,
       userName: row.userName,
-      dateOfBirth: row.dateOfBirth,
+      dateOfBirth: toDateOfBirth(row.dateOfBirth),
       avatar: row.avatar,
       bio: row.bio,
       hideYear: row.hideYear,

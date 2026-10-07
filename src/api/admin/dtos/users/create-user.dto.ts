@@ -4,6 +4,7 @@ import {
   IsEnum,
   IsOptional,
   IsString,
+  Length,
   MinLength,
 } from "class-validator";
 
@@ -31,4 +32,14 @@ export class CreateUserDto {
   @IsOptional()
   @IsEnum(UserRole)
   role: UserRole = UserRole.USER;
+
+  @ApiProperty({
+    example: "john_doe",
+    description: "Unique public username used in the user's profile URL.",
+    minLength: 3,
+    maxLength: 50,
+  })
+  @IsString()
+  @Length(3, 50)
+  userName!: string;
 }

@@ -30,7 +30,7 @@ export class InvalidOtpException extends DomainException {
 }
 
 export class OtpCooldownException extends DomainException {
-  constructor() {
+  constructor(public readonly retryAfterSeconds = 60) {
     super("Please wait before requesting another OTP.");
   }
 }

@@ -81,6 +81,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
       statusCode: status,
       message: this.messageFor(exception, status),
       error: this.errorFor(exception, status),
+      ...(exception instanceof OtpCooldownException
+        ? { retryAfterSeconds: exception.retryAfterSeconds }
+        : {}),
       requestId,
       path: request.url,
       timestamp: new Date().toISOString(),

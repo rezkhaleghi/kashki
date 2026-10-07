@@ -6,6 +6,7 @@ import {
   DepositIdempotencyConflictException,
   DepositNotFoundException,
   InvalidCredentialsException,
+  OtpCooldownException,
   TicketAccessNotAllowedException,
   TicketStatusTransitionException,
   UserAlreadyExistsException,
@@ -73,6 +74,20 @@ describe("HttpExceptionFilter", () => {
     filter.catch(new InvalidCredentialsException(), host);
 
     expect(status).toHaveBeenCalledWith(401);
+  });
+
+  it("returns the remaining OTP cooldown in the error response", () => {
+    const { host, status, json } = createHost("/auth/request-otp");
+
+    filter.catch(new OtpCooldownException(37), host);
+
+    expect(status).toHaveBeenCalledWith(429);
+    expect(json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: "OtpCooldownException",
+        retryAfterSeconds: 37,
+      }),
+    );
   });
 
   it("maps authorization failures to 403", () => {

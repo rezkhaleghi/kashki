@@ -27,7 +27,7 @@ export class RedisOtpStore {
 
   async save(email: string, otp: string): Promise<void> {
     const result = await this.redis.eval(
-      "if redis.call('SET', KEYS[1], '1', 'EX', ARGV[1], 'NX') == false then return 0; end; redis.call('SET', KEYS[2], ARGV[2], 'EX', ARGV[3]); redis.call('DEL', KEYS[3]); return 1;",
+      "if redis.call('SET', KEYS[1], '1', 'EX', ARGV[1], 'NX') == false then local ttl = redis.call('PTTL', KEYS[1]); return math.max(1, math.ceil(ttl / 1000)); end; redis.call('SET', KEYS[2], ARGV[2], 'EX', ARGV[3]); redis.call('DEL', KEYS[3]); return 0;",
       {
         keys: [
           this.cooldownKeyFor(email),
@@ -41,8 +41,8 @@ export class RedisOtpStore {
         ],
       },
     );
-    if (Number(result) !== 1) {
-      throw new OtpCooldownException();
+    if (Number(result) > 0) {
+      throw new OtpCooldownException(Number(result));
     }
   }
 

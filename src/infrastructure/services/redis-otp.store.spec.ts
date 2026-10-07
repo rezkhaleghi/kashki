@@ -17,7 +17,7 @@ describe("RedisOtpStore", () => {
   });
 
   it("atomically saves cooldown, OTP, and resets attempts", async () => {
-    redis.eval.mockResolvedValue(1);
+    redis.eval.mockResolvedValue(0);
     await store.save("USER@example.com", "123456");
 
     expect(redis.eval).toHaveBeenCalledWith(
@@ -33,10 +33,13 @@ describe("RedisOtpStore", () => {
   });
 
   it("rejects a request during the resend cooldown", async () => {
-    redis.eval.mockResolvedValue(0);
+    redis.eval.mockResolvedValue(37);
     await expect(
       store.save("user@example.com", "123456"),
-    ).rejects.toBeInstanceOf(OtpCooldownException);
+    ).rejects.toMatchObject({
+      constructor: OtpCooldownException,
+      retryAfterSeconds: 37,
+    });
   });
 
   it("returns true only when Redis verifies the OTP", async () => {

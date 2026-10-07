@@ -69,6 +69,10 @@ export class AuthController {
 
     return {
       message: "OTP sent",
+      resendAfterSeconds: this.configService.get(
+        "OTP_RESEND_COOLDOWN_SECONDS",
+        60,
+      ),
     };
   }
 

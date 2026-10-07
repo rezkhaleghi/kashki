@@ -14,6 +14,7 @@ import { InfrastructureModule } from "./infrastructure/infrastructure.module";
 import { GiftsModule } from "@api/gifts/gifts.module";
 import { ListsModule } from "@api/lists/lists.module";
 import { WishesModule } from "@api/wishes/wishes.module";
+import { NotificationsModule } from "@api/notifications/notifications.module";
 
 /**
  * Root application module.
@@ -65,6 +66,7 @@ import { WishesModule } from "@api/wishes/wishes.module";
 
     ListsModule,
     WishesModule,
+    NotificationsModule,
   ],
 
   /**

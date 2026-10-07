@@ -43,6 +43,15 @@ function toDateOfBirth(value: Date | string | null): Date | null {
   return date;
 }
 
+function toBirthday(value: Date | string | null): string | null {
+  const date = toDateOfBirth(value);
+  if (!date) return null;
+
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${month}-${day}`;
+}
+
 /**
  * Concrete implementation of the domain's UserRepository contract.
  *
@@ -295,7 +304,7 @@ export class UserRepositoryImpl implements UserRepository {
         avatar: row.avatar,
         bio: row.bio,
         email: row.email,
-        dateOfBirth: row.dateOfBirth,
+        birthday: toBirthday(row.dateOfBirth),
         createdAt: row.createdAt,
       })),
       page: params.page,

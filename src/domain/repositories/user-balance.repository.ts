@@ -7,6 +7,8 @@ export type UserBalanceSortBy = "currency" | "amount" | "createdAt";
 export abstract class UserBalanceRepository {
   abstract create(balance: UserBalance): Promise<UserBalance>;
 
+  abstract createIfNotExists(balance: UserBalance): Promise<void>;
+
   abstract findByUserIdAndCurrency(
     userId: string,
     currency: PaymentCurrency,

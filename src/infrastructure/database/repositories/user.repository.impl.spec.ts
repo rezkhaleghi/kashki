@@ -34,4 +34,44 @@ describe("UserRepositoryImpl", () => {
     expect(user?.dateOfBirth).toBeInstanceOf(Date);
     expect(user?.dateOfBirth?.toISOString()).toBe("2000-07-25T00:00:00.000Z");
   });
+
+  it("returns only the month and day of birth in search results", async () => {
+    const row = Object.assign(new UserOrmEntity(), {
+      id: "user-id",
+      firstName: "Birthday",
+      lastName: "User",
+      userName: "birthday-user",
+      avatar: null,
+      bio: null,
+      email: "birthday@example.com",
+      dateOfBirth: "2000-07-25",
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    const queryBuilder = {
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      orWhere: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      setParameters: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn().mockResolvedValue([[row], 1]),
+    };
+    const ormRepository = {
+      createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+    } as unknown as Repository<UserOrmEntity>;
+    const repository = new UserRepositoryImpl(ormRepository);
+
+    const result = await repository.search("birthday", {
+      page: 1,
+      limit: 10,
+      sortBy: "createdAt",
+      sortDirection: "DESC",
+    });
+
+    expect(result.data[0].birthday).toBe("07-25");
+    expect(result.data[0]).not.toHaveProperty("dateOfBirth");
+  });
 });

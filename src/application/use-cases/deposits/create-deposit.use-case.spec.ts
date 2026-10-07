@@ -42,6 +42,10 @@ describe("CreateDepositUseCase", () => {
     save: jest.fn(),
   };
 
+  const userBalanceRepositoryMock = {
+    createIfNotExists: jest.fn(),
+  };
+
   const unitOfWorkMock = {
     execute: jest.fn(),
   };
@@ -89,6 +93,7 @@ describe("CreateDepositUseCase", () => {
     unitOfWorkMock.execute.mockImplementationOnce(async (callback: any) =>
       callback({
         userRepository: userRepositoryMock,
+        userBalanceRepository: userBalanceRepositoryMock,
         depositRepository: depositRepositoryMock,
       }),
     );
@@ -147,6 +152,7 @@ describe("CreateDepositUseCase", () => {
       .mockImplementationOnce(async (callback: any) =>
         callback({
           userRepository: userRepositoryMock,
+          userBalanceRepository: userBalanceRepositoryMock,
           depositRepository: depositRepositoryMock,
         }),
       )
@@ -169,6 +175,13 @@ describe("CreateDepositUseCase", () => {
     ).toHaveBeenCalledWith("user-1", "client-key-1");
 
     expect(userRepositoryMock.findById).toHaveBeenCalledWith("user-1");
+    expect(userBalanceRepositoryMock.createIfNotExists).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-1",
+        currency,
+        amount: "0",
+      }),
+    );
 
     expect(depositRepositoryMock.create).toHaveBeenCalledTimes(1);
 
@@ -427,6 +440,7 @@ describe("CreateDepositUseCase", () => {
     unitOfWorkMock.execute.mockImplementation(async (callback: any) =>
       callback({
         userRepository: userRepositoryMock,
+        userBalanceRepository: userBalanceRepositoryMock,
         depositRepository: depositRepositoryMock,
       }),
     );

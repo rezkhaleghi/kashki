@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import { Deposit } from "@domain/entities/deposit.entity";
+import { UserBalance } from "@domain/entities/user-balance.entity";
 import { PaymentCurrency } from "@domain/enums/payment-currency.enum";
 import { PaymentProvider } from "@domain/enums/payment-provider.enum";
 import { DepositStatus } from "@domain/enums/deposit-status.enum";
@@ -53,12 +54,20 @@ export class CreateDepositUseCase {
      * concurrency guard when two requests reach INSERT simultaneously.
      */
     const deposit = await this.unitOfWork.execute(
-      async ({ userRepository, depositRepository }) => {
+      async ({ userRepository, userBalanceRepository, depositRepository }) => {
         const user = await userRepository.findById(input.userId);
 
         if (!user) {
           throw new UserNotFoundException();
         }
+
+        await userBalanceRepository.createIfNotExists(
+          UserBalance.create({
+            userId: user.id,
+            currency: input.currency,
+            amount: "0",
+          }),
+        );
 
         const existing = await depositRepository.findByUserIdAndIdempotencyKey(
           input.userId,

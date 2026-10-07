@@ -49,6 +49,15 @@ export class UserBalanceRepositoryImpl implements UserBalanceRepository {
     }
   }
 
+  async createIfNotExists(balance: UserBalance): Promise<void> {
+    await this.repository
+      .createQueryBuilder()
+      .insert()
+      .values(this.toOrm(balance))
+      .orIgnore()
+      .execute();
+  }
+
   async findByUserIdAndCurrency(
     userId: string,
     currency: PaymentCurrency,

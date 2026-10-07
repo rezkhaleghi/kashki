@@ -40,6 +40,7 @@ describe("SearchUsersUseCase", () => {
         avatar: null,
         bio: null,
         email: "user@example.com",
+        birthday: null,
         createdAt: new Date(),
       },
     ];
